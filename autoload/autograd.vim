@@ -7,26 +7,26 @@ let s:Tensor = {
   \ 'gen': 0,
   \ }
 
-function! s:Tensor.ZeroGrad() abort
+function! s:Tensor.zero_grad() abort
   let self.grad = {}
 endfunction
 
-function! s:Tensor.SetParent(parent_link) abort
+function! s:Tensor.set_parent(parent_link) abort
   let self.parent = a:parent_link
   let self.gen = self.parent.gen + 1
 endfunction
 
-function! s:TensorGenComp(lhs, rhs) abort
-  if lhs['gen'] == rhs['gen']
+function! s:comp_tensor_gen(lhs, rhs) abort
+  if a:lhs['gen'] == a:rhs['gen']
     return 0
-  elseif lhs['gen'] < rhs['gen']
+  elseif a:lhs['gen'] < a:rhs['gen']
     return -1
   else
     return 1
   endif
 endfunction
 
-function! s:Tensor.Backward() abort
+function! s:Tensor.backward() abort
   if empty(self.grad)
     let self.grad = s:Tensor(1.0)
   endif
@@ -40,7 +40,7 @@ function! s:Tensor.Backward() abort
   while len(l:links) > 0
     let l:link = remove(l:links, -1)
 
-    let l:x_grads = l:link.Backward()
+    let l:x_grads = l:link.backward()
 
     let l:x_len = len(l:x_grads)
     for l:i in range(l:x_len)
@@ -48,7 +48,7 @@ function! s:Tensor.Backward() abort
       if empty(l:input.grad)
         let l:input.grad = l:x_grads[l:i]
       else
-        let l:input.grad = s:Add(l:input.grad, l:x_grads[l:i])
+        let l:input.grad = s:add(l:input.grad, l:x_grads[l:i])
       endif
 
       if !empty(l:input.parent)
@@ -56,7 +56,7 @@ function! s:Tensor.Backward() abort
       endif
     endfor
 
-    call sort(l:links, function('s:TensorGenComp'))
+    call sort(l:links, function('s:comp_tensor_gen'))
   endwhile
 endfunction
 
@@ -66,7 +66,7 @@ function! s:Tensor(data) abort
   return l:tensor
 endfunction
 
-function! s:IsTensor(x) abort
+function! s:is_tensor(x) abort
   if type(a:x) != v:t_dict
     return 0
   endif
@@ -80,17 +80,17 @@ let s:Link = {
   \ 'inputs': [],
   \ 'outputs': [],
   \ 'gen': 0,
-  \ 'Forward': v:null,
-  \ 'Backward': v:null
+  \ 'forward': v:null,
+  \ 'backward': v:null
   \ }
 
-function! s:Link.Call(...) abort
+function! s:Link.call(...) abort
   let self.inputs = []
   for l:input in a:000
-    call add(self.inputs, s:IsTensor(l:input) ? l:input : s:Tensor(l:input))
+    call add(self.inputs, s:is_tensor(l:input) ? l:input : s:Tensor(l:input))
   endfor
 
-  let self.outputs = self.Forward(self.inputs)
+  let self.outputs = self.forward(self.inputs)
 
   let l:gens = []
   for l:input in self.inputs
@@ -99,58 +99,127 @@ function! s:Link.Call(...) abort
   let self.gen = max(l:gens)
 
   for l:output in self.outputs
-    call l:output.SetParent(self)
+    call l:output.set_parent(self)
   endfor
 
   return len(self.outputs) > 1 ? self.outputs : self.outputs[0]
 endfunction
 
-function! s:Link() abort
-  return deepcopy(s:Link)
+function! s:Link(name) abort
+  let l:link = deepcopy(s:Link)
+  let l:link.name = a:name
+  let l:link.forward = function(a:name . '_forward')
+  let l:link.backward = function(a:name . '_backward')
+  return l:link
 endfunction
 
 
 " Operations
+function! s:add(x0, x1) abort
+  return s:Link('s:add').call(a:x0, a:x1)
+endfunction
 
-function! s:Add_Forward(inputs) dict abort
+function! s:add_forward(inputs) dict abort
   return [s:Tensor(a:inputs[0].data + a:inputs[1].data)]
 endfunction
 
-function! s:Add_Backward() dict abort
+function! s:add_backward() dict abort
   let l:gy = self.outputs[0].grad
   return [l:gy, l:gy]
 endfunction
 
-function! s:Add(x0, x1) abort
-  let l:link = s:Link()
 
-  let l:link.name = 'Add'
-  let l:link.Forward = function('s:Add_Forward')
-  let l:link.Backward = function('s:Add_Backward')
-
-  return l:link.Call(a:x0, a:x1)
+function! s:mul(x0, x1) abort
+  return s:Link('s:mul').call(a:x0, a:x1)
 endfunction
 
-
-function! s:Mul_Forward(inputs) dict abort
+function! s:mul_forward(inputs) dict abort
   return [s:Tensor(a:inputs[0].data * a:inputs[1].data)]
 endfunction
 
-function! s:Mul_Backward() dict abort
+function! s:mul_backward() dict abort
   let l:x0 = self.inputs[0]
   let l:x1 = self.inputs[1]
   let l:gy = self.outputs[0].grad
-  return [s:Mul(l:x1, l:gy), s:Mul(l:x0, l:gy)]
+  return [s:mul(l:x1, l:gy), s:mul(l:x0, l:gy)]
 endfunction
 
-function! s:Mul(x0, x1) abort
-  let l:link = s:Link()
 
-  let l:link.name = 'Mul'
-  let l:link.Forward = function('s:Mul_Forward')
-  let l:link.Backward = function('s:Mul_Backward')
+function! s:sub(x0, x1) abort
+  return s:Link('s:sub').call(a:x0, a:x1)
+endfunction
 
-  return l:link.Call(a:x0, a:x1)
+function! s:sub_forward(inputs) dict abort
+  return [s:Tensor(self.inputs[0].data - self.inputs[1].data)]
+endfunction
+
+function! s:sub_backward() dict abort
+  let l:gy = self.outputs[0].grad
+  return [l:gy, s:mul(-1, l:gy)]
+endfunction
+
+
+function! s:div(x0, x1) abort
+  return s:Link('s:div').call(a:x0, a:x1)
+endfunction
+
+function! s:div_forward(inputs) dict abort
+  return [s:Tensor(self.inputs[0].data - self.inputs[1].data)]
+endfunction
+
+function! s:div_backward() dict abort
+  let l:x0 = self.inputs[0]
+  let l:x1 = self.inputs[1]
+  let l:gy = self.outputs[0].grad
+
+  let l:gx0 = l:gy / l:x1
+
+  " gx1 = gy * -(x0 / x1 ** 2)
+  let l:gx1 = s:mul(l:gy, s:mul(-1, s:div(l:x0, s:pow(l:x1, 2))))
+
+  return [l:gx0, l:gx1]
+endfunction
+
+
+function! s:pow(x, c) abort
+  return s:Link('s:pow').call(a:x, a:c)
+endfunction
+
+function! s:pow_forward(inputs) dict abort
+  return [s:Tensor(pow(self.inputs[0].data, self.inputs[1].data))]
+endfunction
+
+function! s:pow_backward() dict abort
+  let l:x = self.inputs[0]
+  let l:c = self.inputs[1]
+  let l:gy = self.outputs[0].grad
+  return [s:mul(l:gy, s:mul(l:c, s:pow(l:x, s:sub(l:c, 1))))]
+endfunction
+
+
+" API
+function! autograd#tensor(data) abort
+  return s:Tensor(a:data)
+endfunction
+
+function! autograd#add(x0, x1) abort
+  return s:add(a:x0, a:x1)
+endfunction
+
+function! autograd#mul(x0, x1) abort
+  return s:add(a:x0, a:x1)
+endfunction
+
+function! autograd#sub(x0, x1) abort
+  return s:sub(a:x0, a:x1)
+endfunction
+
+function! autograd#div(x0, x1) abort
+  return s:div(a:0, a:x1)
+endfunction
+
+function! autograd#pow(x, c) abort
+  return s:pow(a:x, a:c)
 endfunction
 
 
@@ -158,14 +227,14 @@ function! s:test1() abort
   let l:x0 = s:Tensor(3)
   let l:x1 = s:Tensor(2)
 
-  let l:t = s:Mul(l:x0, l:x1)
+  let l:t = s:mul(l:x0, l:x1)
   echo l:t.data
 
   let l:x2 = s:Tensor(10)
-  let l:y = s:Mul(l:t, l:x2)
+  let l:y = s:mul(l:t, l:x2)
 
   echo l:y.data
-  call l:y.Backward()
+  call l:y.backward()
 
   echo l:x0.grad.data l:x1.grad.data
 endfunction
@@ -174,11 +243,12 @@ function! s:test2() abort
   let l:x = s:Tensor(3)
   echo 'x     :' l:x.data
 
-  echo 'func  : y=5*x^2+4'
-  let l:y = s:Add(s:Mul(5, s:Mul(l:x, l:x)), 4)
+  echo 'func  : y = 0.5*x^2 - 5*x + 3'
+  " let l:y = s:add(s:mul(5, s:pow(l:x, 2)), 4)
+  let l:y = s:add(s:sub(s:mul(0.5, s:pow(l:x, 2)), s:mul(5, l:x)), 3)
   echo 'y     :' l:y.data
 
-  call l:y.Backward()
+  call l:y.backward()
   echo 'x.grad:' l:x.grad.data
 endfunction
 
