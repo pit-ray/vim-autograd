@@ -8,67 +8,67 @@ endfunction
 
 
 function! s:test_generation() abort
-  let l:x = autograd#tensor(2.0)
+  let x = autograd#tensor(2.0)
 
-  let l:y = autograd#add(l:x.p(2).p(2), l:x.p(2).p(2))
-  call l:y.backward()
+  let y = autograd#add(x.p(2).p(2), x.p(2).p(2))
+  call y.backward()
 
-  call assert_equal(32.0, l:y.data)
-  call assert_equal(64.0, l:x.grad.data)
+  call assert_equal(32.0, y.data)
+  call assert_equal(64.0, x.grad.data)
 endfunction
 
 
 function! s:test_higer_order_differential() abort
-  let l:x = autograd#tensor(2.0)
-  call assert_equal(2.0, l:x.data)
+  let x = autograd#tensor(2.0)
+  call assert_equal(2.0, x.data)
 
   " y = x^5 - 3*x^3 + 1
-  let l:y = l:x.p(5).s(l:x.p(3).m(3)).a(1)
-  call assert_equal(9.0, l:y.data)
+  let y = x.p(5).s(x.p(3).m(3)).a(1)
+  call assert_equal(9.0, y.data)
 
-  call l:y.backward()
-  call assert_equal(44.0, l:x.grad.data)
+  call y.backward()
+  call assert_equal(44.0, x.grad.data)
 
-  let l:gx = l:x.grad
-  call l:x.zero_grad()
-  call l:gx.backward()
-  call assert_equal(124.0, l:x.grad.data)
+  let gx = x.grad
+  call x.zero_grad()
+  call gx.backward()
+  call assert_equal(124.0, x.grad.data)
 
-  let l:gx = l:x.grad
-  call l:x.zero_grad()
-  call l:gx.backward()
-  call assert_equal(222.0, l:x.grad.data)
+  let gx = x.grad
+  call x.zero_grad()
+  call gx.backward()
+  call assert_equal(222.0, x.grad.data)
 
-  let l:gx = l:x.grad
-  call l:x.zero_grad()
-  call l:gx.backward()
-  call assert_equal(240.0, l:x.grad.data)
+  let gx = x.grad
+  call x.zero_grad()
+  call gx.backward()
+  call assert_equal(240.0, x.grad.data)
 
-  let l:gx = l:x.grad
-  call l:x.zero_grad()
-  call l:gx.backward()
-  call assert_equal(120.0, l:x.grad.data)
+  let gx = x.grad
+  call x.zero_grad()
+  call gx.backward()
+  call assert_equal(120.0, x.grad.data)
 endfunction
 
 
 function! s:test_goldstein_price() abort
-  let l:x = autograd#tensor(1.0)
-  call assert_equal(1.0, l:x.data)
+  let x = autograd#tensor(1.0)
+  call assert_equal(1.0, x.data)
 
-  let l:y = autograd#tensor(1.0)
-  call assert_equal(1.0, l:y.data)
+  let y = autograd#tensor(1.0)
+  call assert_equal(1.0, y.data)
 
-  let l:t1 = l:x.a(l:y.a(1)).p(2)
-  let l:t2 = l:x.m(-14).a(19).a(l:x.p(2).m(3)).s(l:y.m(14)).a(l:x.m(l:y.m(6))).a(l:y.p(2).m(3))
-  let l:t3 = l:x.m(2).s(l:y.m(3)).p(2)
-  let l:t4 = l:x.m(-32).a(18).a(l:x.p(2).m(12)).a(l:y.m(48)).s(l:x.m(l:y.m(36))).a(l:y.p(2).m(27))
+  let t1 = x.a(y.a(1)).p(2)
+  let t2 = x.m(-14).a(19).a(x.p(2).m(3)).s(y.m(14)).a(x.m(y.m(6))).a(y.p(2).m(3))
+  let t3 = x.m(2).s(y.m(3)).p(2)
+  let t4 = x.m(-32).a(18).a(x.p(2).m(12)).a(y.m(48)).s(x.m(y.m(36))).a(y.p(2).m(27))
 
-  let l:z = autograd#mul(l:t1.m(l:t2).a(1), l:t3.m(l:t4).a(30))
-  call assert_equal(1876.0, l:z.data)
+  let z = autograd#mul(t1.m(t2).a(1), t3.m(t4).a(30))
+  call assert_equal(1876.0, z.data)
 
-  call l:z.backward()
-  call assert_equal(-5376.0, l:x.grad.data)
-  call assert_equal(8064.0, l:y.grad.data)
+  call z.backward()
+  call assert_equal(-5376.0, x.grad.data)
+  call assert_equal(8064.0, y.grad.data)
 endfunction
 
 
