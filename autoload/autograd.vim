@@ -60,6 +60,30 @@ function! s:Tensor.backward() abort
   endwhile
 endfunction
 
+function! s:Tensor.a(x) abort
+  return s:add(self, a:x)
+endfunction
+
+function! s:Tensor.m(x) abort
+  return s:mul(self, a:x)
+endfunction
+
+function! s:Tensor.s(x) abort
+  return s:sub(self, a:x)
+endfunction
+
+function! s:Tensor.d(x) abort
+  return s:div(self, a:x)
+endfunction
+
+function! s:Tensor.p(x) abort
+  return s:pow(self, a:x)
+endfunction
+
+function! s:Tensor.n() abort
+  return s:mul(self, -1)
+endfunction
+
 function! s:Tensor(data) abort
   let l:tensor = deepcopy(s:Tensor)
   let l:tensor.data = a:data
@@ -141,7 +165,7 @@ function! s:mul_backward() dict abort
   let l:x0 = self.inputs[0]
   let l:x1 = self.inputs[1]
   let l:gy = self.outputs[0].grad
-  return [s:mul(l:x1, l:gy), s:mul(l:x0, l:gy)]
+  return [l:x1.m(l:gy), l:x0.m(l:gy)]
 endfunction
 
 
@@ -155,7 +179,7 @@ endfunction
 
 function! s:sub_backward() dict abort
   let l:gy = self.outputs[0].grad
-  return [l:gy, s:mul(-1, l:gy)]
+  return [l:gy, l:gy.n()]
 endfunction
 
 
@@ -172,10 +196,10 @@ function! s:div_backward() dict abort
   let l:x1 = self.inputs[1]
   let l:gy = self.outputs[0].grad
 
-  let l:gx0 = l:gy / l:x1
+  let l:gx0 = l:gy.d(l:x1)
 
   " gx1 = gy * -(x0 / x1 ** 2)
-  let l:gx1 = s:mul(l:gy, s:mul(-1, s:div(l:x0, s:pow(l:x1, 2))))
+  let l:gx1 = l:gy.m(l:x0.d(l:x1.p(2)).n())
 
   return [l:gx0, l:gx1]
 endfunction
@@ -193,7 +217,9 @@ function! s:pow_backward() dict abort
   let l:x = self.inputs[0]
   let l:c = self.inputs[1]
   let l:gy = self.outputs[0].grad
-  return [s:mul(l:gy, s:mul(l:c, s:pow(l:x, s:sub(l:c, 1))))]
+
+  " gx = gy * c * x**(c - 1)
+  return [l:gy.m(l:c.m(l:x.p(l:c.s(1))))]
 endfunction
 
 
@@ -252,4 +278,22 @@ function! s:test2() abort
   echo 'x.grad:' l:x.grad.data
 endfunction
 
-call s:test2()
+
+function! s:test3() abort
+  let l:x = s:Tensor(2.0)
+  echo 'x =' l:x.data
+
+  " y = x^5 - 3*x^3 + 1
+  let l:y = s:add(s:sub(l:x.p(5), s:mul(3, s:pow(l:x, 3))), 1)
+  echo 'f(x) = x^5 - 3*x^3 + 1 =' l:y.data
+
+  call l:y.backward()
+  echo "f'(x) =" l:x.grad.data
+
+  let l:gx = l:x.grad
+  call l:x.zero_grad()
+  call l:gx.backward()
+  echo  "f''(x) =" l:x.grad.data
+endfunction
+
+call s:test3()
