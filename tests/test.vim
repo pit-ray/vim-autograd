@@ -51,5 +51,4 @@ function! s:test() abort
   qall!
 endfunction
 
-
 call s:test()

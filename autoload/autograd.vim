@@ -233,7 +233,7 @@ function! autograd#add(x0, x1) abort
 endfunction
 
 function! autograd#mul(x0, x1) abort
-  return s:add(a:x0, a:x1)
+  return s:mul(a:x0, a:x1)
 endfunction
 
 function! autograd#sub(x0, x1) abort
@@ -247,7 +247,6 @@ endfunction
 function! autograd#pow(x, c) abort
   return s:pow(a:x, a:c)
 endfunction
-
 
 function! s:test1() abort
   let l:x0 = s:Tensor(3)
@@ -277,23 +276,3 @@ function! s:test2() abort
   call l:y.backward()
   echo 'x.grad:' l:x.grad.data
 endfunction
-
-
-function! s:test3() abort
-  let l:x = s:Tensor(2.0)
-  echo 'x =' l:x.data
-
-  " y = x^5 - 3*x^3 + 1
-  let l:y = s:add(s:sub(l:x.p(5), s:mul(3, s:pow(l:x, 3))), 1)
-  echo 'f(x) = x^5 - 3*x^3 + 1 =' l:y.data
-
-  call l:y.backward()
-  echo "f'(x) =" l:x.grad.data
-
-  let l:gx = l:x.grad
-  call l:x.zero_grad()
-  call l:gx.backward()
-  echo  "f''(x) =" l:x.grad.data
-endfunction
-
-call s:test3()
