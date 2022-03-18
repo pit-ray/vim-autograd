@@ -3,6 +3,8 @@ let s:enable_backprop = 1
 let s:last_tensor_id = 0
 let s:last_func_id = v:numbermax / 2 - 1
 
+let s:eps = 0.000001
+
 " Tensor
 let s:Tensor = {
   \ 'name': '',
@@ -56,7 +58,12 @@ function! s:Tensor.backward(...) abort
   let l:scanned_fnids = []
   while len(l:funcs) > 0
     let l:func = remove(l:funcs, -1)
-    let l:gxs = l:func.backward()
+
+    let l:gys = []
+    for l:output in l:func.outputs
+      call add(l:gys, l:output.grad)
+    endfor
+    let l:gxs = l:func.backward(l:gys)
 
     let l:input_grads = []
 
@@ -181,18 +188,30 @@ function! s:Function(name) abort
 endfunction
 
 
+" Maths
+function! s:isclose(a, b, ...) abort
+  let l:rtol = get(a:, 1, 0.00001)
+  let l:atol = get(a:, 2, 0.00000001)
+  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
+endfunction
+
+" it returns random value from 0.0 to 1.0.
+function! s:rand()
+  return rand() / 4294967295.0
+endfunction
+
+
 " Operations
 function! s:add(x0, x1) abort
   return s:Function('s:add').call(a:x0, a:x1)
 endfunction
 
-function! s:add_forward(inputs) dict abort
-  return [s:Tensor(a:inputs[0].data + a:inputs[1].data)]
+function! s:add_forward(xs) dict abort
+  return [s:Tensor(a:xs[0].data + a:xs[1].data)]
 endfunction
 
-function! s:add_backward() dict abort
-  let l:gy = self.outputs[0].grad
-  return [l:gy, l:gy]
+function! s:add_backward(gys) dict abort
+  return [a:gys[0], a:gys[0]]
 endfunction
 
 
@@ -200,15 +219,14 @@ function! s:mul(x0, x1) abort
   return s:Function('s:mul').call(a:x0, a:x1)
 endfunction
 
-function! s:mul_forward(inputs) dict abort
-  return [s:Tensor(a:inputs[0].data * a:inputs[1].data)]
+function! s:mul_forward(xs) dict abort
+  return [s:Tensor(a:xs[0].data * a:xs[1].data)]
 endfunction
 
-function! s:mul_backward() dict abort
+function! s:mul_backward(gys) dict abort
   let l:x0 = self.inputs[0]
   let l:x1 = self.inputs[1]
-  let l:gy = self.outputs[0].grad
-  return [l:x1.m(l:gy), l:x0.m(l:gy)]
+  return [l:x1.m(a:gys[0]), l:x0.m(a:gys[0])]
 endfunction
 
 
@@ -216,13 +234,12 @@ function! s:sub(x0, x1) abort
   return s:Function('s:sub').call(a:x0, a:x1)
 endfunction
 
-function! s:sub_forward(inputs) dict abort
-  return [s:Tensor(self.inputs[0].data - self.inputs[1].data)]
+function! s:sub_forward(xs) dict abort
+  return [s:Tensor(a:xs[0].data - a:xs[1].data)]
 endfunction
 
-function! s:sub_backward() dict abort
-  let l:gy = self.outputs[0].grad
-  return [l:gy, l:gy.n()]
+function! s:sub_backward(gys) dict abort
+  return [a:gys[0], a:gys[0].n()]
 endfunction
 
 
@@ -230,45 +247,93 @@ function! s:div(x0, x1) abort
   return s:Function('s:div').call(a:x0, a:x1)
 endfunction
 
-function! s:div_forward(inputs) dict abort
-  return [s:Tensor(self.inputs[0].data - self.inputs[1].data)]
+function! s:div_forward(xs) dict abort
+  return [s:Tensor(a:xs[0].data / a:xs[1].data)]
 endfunction
 
-function! s:div_backward() dict abort
+function! s:div_backward(gys) dict abort
   let l:x0 = self.inputs[0]
   let l:x1 = self.inputs[1]
-  let l:gy = self.outputs[0].grad
 
-  let l:gx0 = l:gy.d(l:x1)
+  let l:gx0 = a:gys[0].d(l:x1)
 
   " gx1 = gy * -(x0 / x1 ** 2)
-  let l:gx1 = l:gy.m(l:x0.d(l:x1.p(2)).n())
+  let l:gx1 = s:mul(a:gys[0], l:x0.d(l:x1.p(2)).n())
 
   return [l:gx0, l:gx1]
 endfunction
-
 
 function! s:pow(x, c) abort
   return s:Function('s:pow').call(a:x, a:c)
 endfunction
 
-function! s:pow_forward(inputs) dict abort
-  return [s:Tensor(pow(self.inputs[0].data, self.inputs[1].data))]
+function! s:pow_forward(xs) dict abort
+  return [s:Tensor(pow(a:xs[0].data, a:xs[1].data))]
 endfunction
 
-function! s:pow_backward() dict abort
+function! s:pow_backward(gys) dict abort
   let l:x = self.inputs[0]
   let l:c = self.inputs[1]
-  let l:gy = self.outputs[0].grad
+  let l:y = self.outputs[0]
 
   " gx = gy * c * x**(c - 1)
-  return [l:gy.m(l:c.m(l:x.p(l:c.s(1))))]
+  let l:gx = s:mul(a:gys[0], l:c.m(l:x.p(l:c.s(1))))
+
+  " gc = gy * y * log(x)
+  let l:gc = s:mul(a:gys[0], l:y.m(s:log(l:x)))
+  return [l:gx, l:gc]
 endfunction
 
-" Utilities
-function! s:gradcheck(func, inputs) abort
-  let l:eps = 1e-6
+
+function! s:log(x) abort
+  return s:Function('s:log').call(a:x)
 endfunction
+
+function! s:log_forward(xs) dict abort
+  return [s:Tensor(log(a:xs[0].data))]
+endfunction
+
+function! s:log_backward(gys) dict abort
+  let l:x = self.inputs[0]
+  return [s:div(a:gys[0], l:x)]
+endfunction
+
+
+" Utilities
+function! s:numerical_grad(f, x) abort
+  let l:y0 = a:f(s:Tensor(a:x.data - s:eps))
+  let l:y1 = a:f(s:Tensor(a:x.data + s:eps))
+  return (l:y1.data - l:y0.data) / (2 * s:eps)
+endfunction
+
+function! s:gradcheck(f, inputs) abort
+  let l:y = a:f(a:inputs)
+
+  for l:x in a:inputs
+    call l:x.zero_grad()
+  endfor
+  call l:y.backward()
+
+  let l:grads = []
+  for l:x in a:inputs
+    call add(l:grads, l:x.grad.data)
+  endfor
+
+  let l:result = 1
+  let l:input_num = len(a:inputs)
+  for l:i in range(l:input_num)
+    let l:before_args = l:i > 0 ? a:inputs[:l:i - 1] : []
+    let l:after_args = l:i < l:input_num - 1 ? a:inputs[l:i + 1:] : []
+
+    let l:num_grad = s:numerical_grad(
+      \ {x -> a:f(l:before_args + [x] + l:after_args)},
+      \ a:inputs[l:i]
+      \ )
+
+    call assert_true(s:isclose(l:grads[l:i], l:num_grad))
+  endfor
+endfunction
+
 
 function! s:dump_tensor_as_dotlang(tensor) abort
   return a:tensor.id . '[label="' . a:tensor.name . '", color=lightblue, style=filled]'
@@ -337,10 +402,17 @@ endfunction
 
 
 " API
+" Tensor
 function! autograd#tensor(data) abort
   return s:Tensor(a:data)
 endfunction
 
+" Maths
+function! autograd#rand() abort
+  return s:rand()
+endfunction
+
+" Functions
 function! autograd#add(x0, x1) abort
   return s:add(a:x0, a:x1)
 endfunction
@@ -354,13 +426,16 @@ function! autograd#sub(x0, x1) abort
 endfunction
 
 function! autograd#div(x0, x1) abort
-  return s:div(a:0, a:x1)
+  return s:div(a:x0, a:x1)
 endfunction
 
 function! autograd#pow(x, c) abort
   return s:pow(a:x, a:c)
 endfunction
 
+function! autograd#log(x) abort
+  return s:log(a:x)
+endfunction
 
 " Utilities
 function! autograd#nograd_begin() abort
@@ -371,41 +446,14 @@ function! autograd#nograd_end() abort
   let s:enable_backprop = 1
 endfunction
 
+function! autograd#numerical_grad(f, x) abort
+  return s:numerical_grad(a:f, a:x)
+endfunction
+
+function! autograd#gradcheck(f, inputs) abort
+  return s:gradcheck(a:f, a:inputs)
+endfunction
+
 function! autograd#dump_graph(last_node, filepath) abort
   return s:dump_as_dotlang(a:last_node, a:filepath)
 endfunction
-
-
-function! s:test1() abort
-  let l:x0 = s:Tensor(3)
-  let l:x1 = s:Tensor(2)
-
-  let l:t = s:mul(l:x0, l:x1)
-  echo l:t.data
-
-  let l:x2 = s:Tensor(10)
-  let l:y = s:mul(l:t, l:x2)
-
-  echo l:y.data
-  call l:y.backward()
-
-  echo l:x0.grad.data l:x1.grad.data
-endfunction
-
-function! s:test2() abort
-  let l:x = s:Tensor(3, 'x')
-  echo 'x     :' l:x.data
-  echo s:dump_tensor_as_dotlang(l:x)
-
-  echo 'func  : y = 0.5*x^2 - 5*x + 3'
-  " let l:y = s:add(s:mul(5, s:pow(l:x, 2)), 4)
-  let l:y = s:add(s:sub(s:mul(0.5, s:pow(l:x, 2)), s:mul(5, l:x)), 3)
-  echo 'y     :' l:y.data
-
-  call s:dump_as_dotlang(l:y, '.autograd/test2.png')
-
-  call l:y.backward()
-  echo 'x.grad:' l:x.grad.data
-endfunction
-
-" call s:test2()
