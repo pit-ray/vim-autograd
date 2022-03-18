@@ -271,14 +271,11 @@ function! s:gradcheck(func, inputs) abort
 endfunction
 
 function! s:dump_tensor_as_dotlang(tensor) abort
-  if empty(a:tensor.name) && !empty(a:tensor.data)
-    let a:tensor.name = a:tensor.data
-  endif
   return a:tensor.id . '[label="' . a:tensor.name . '", color=lightblue, style=filled]'
 endfunction
 
 function! s:dump_func_as_dotlang(fn) abort
-  let l:def = a:fn.id . '[label="' . a:fn.name . '(' . a:fn.id . '", color=gray, style=filled, shape=box]'
+  let l:def = a:fn.id . '[label="' . a:fn.name . '", color=gray, style=filled, shape=box]'
 
   let l:links = []
   for l:x in a:fn.inputs
