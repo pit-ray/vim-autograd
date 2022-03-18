@@ -3,6 +3,7 @@ Define-by-Run style automatic differentiation library written in pure Vim Script
 
 It uses the same algorithm as Chainer and PyTorch to perform differentiation by generating a computational graph at runtime, making it easy to obtain derivative values even for complex expressions.
 
+It is based on [DeZero](https://github.com/oreilly-japan/deep-learning-from-scratch-3).
 
 **However it is still under development.**
 
