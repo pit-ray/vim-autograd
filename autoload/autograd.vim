@@ -1,9 +1,11 @@
+let s:enable_backprop = 1
+
 " Tensor
 let s:Tensor = {
   \ 'name': '',
   \ 'data': v:none,
   \ 'grad': {},
-  \ 'parent': {},
+  \ 'parent_fn': {},
   \ 'gen': 0,
   \ }
 
@@ -11,9 +13,9 @@ function! s:Tensor.zero_grad() abort
   let self.grad = {}
 endfunction
 
-function! s:Tensor.set_parent(parent_link) abort
-  let self.parent = a:parent_link
-  let self.gen = self.parent.gen + 1
+function! s:Tensor.set_parent_fn(parent_fn) abort
+  let self.parent_fn = a:parent_fn
+  let self.gen = self.parent_fn.gen + 1
 endfunction
 
 function! s:comp_tensor_gen(lhs, rhs) abort
@@ -26,37 +28,61 @@ function! s:comp_tensor_gen(lhs, rhs) abort
   endif
 endfunction
 
-function! s:Tensor.backward() abort
+function! s:has_instance(list, value)
+  for l:e in a:list
+    if l:e is a:value
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
+function! s:Tensor.backward(...) abort
+  let l:retain_fnout_grad = get(a:, 1, 0)
+
   if empty(self.grad)
     let self.grad = s:Tensor(1.0)
   endif
 
-  if empty(self.parent)
+  if empty(self.parent_fn)
     return
   endif
 
-  let l:links = [self.parent]
+  let l:funcs = [self.parent_fn]
+  while len(l:funcs) > 0
+    let l:func = remove(l:funcs, -1)
+    let l:gxs = l:func.backward()
 
-  while len(l:links) > 0
-    let l:link = remove(l:links, -1)
+    let l:input_grads = []
 
-    let l:x_grads = l:link.backward()
-
-    let l:x_len = len(l:x_grads)
-    for l:i in range(l:x_len)
-      let l:input = l:link.inputs[l:i]
+    let l:input_num = len(l:gxs)
+    for l:i in range(l:input_num)
+      let l:input = l:func.inputs[l:i]
       if empty(l:input.grad)
-        let l:input.grad = l:x_grads[l:i]
+        let l:input.grad = l:gxs[l:i]
       else
-        let l:input.grad = s:add(l:input.grad, l:x_grads[l:i])
+        let l:input.grad = s:add(l:input.grad, l:gxs[l:i])
       endif
 
-      if !empty(l:input.parent)
-        call add(l:links, l:input.parent)
+      call add(l:input_grads, l:input.grad)
+
+      if !empty(l:input.parent_fn)
+        call add(l:funcs, l:input.parent_fn)
       endif
     endfor
 
-    call sort(l:links, function('s:comp_tensor_gen'))
+    call sort(l:funcs, function('s:comp_tensor_gen'))
+
+    " Usually when we differentiate y=f(x) we are
+    " interested in df/dx and do not need df/dy(=1) etc.
+    " Therefore, we usually release.
+    if !l:retain_fnout_grad
+      for l:output in l:func.outputs
+        if !s:has_instance(l:input_grads, l:output.grad)
+          let l:output.grad = {}
+        endif
+      endfor
+    endif
   endwhile
 endfunction
 
@@ -98,8 +124,8 @@ function! s:is_tensor(x) abort
 endfunction
 
 
-" Link
-let s:Link = {
+" Function
+let s:Function = {
   \ 'name': '',
   \ 'inputs': [],
   \ 'outputs': [],
@@ -108,7 +134,7 @@ let s:Link = {
   \ 'backward': v:null
   \ }
 
-function! s:Link.call(...) abort
+function! s:Function.call(...) abort
   let self.inputs = []
   for l:input in a:000
     call add(self.inputs, s:is_tensor(l:input) ? l:input : s:Tensor(l:input))
@@ -123,24 +149,24 @@ function! s:Link.call(...) abort
   let self.gen = max(l:gens)
 
   for l:output in self.outputs
-    call l:output.set_parent(self)
+    call l:output.set_parent_fn(self)
   endfor
 
   return len(self.outputs) > 1 ? self.outputs : self.outputs[0]
 endfunction
 
-function! s:Link(name) abort
-  let l:link = deepcopy(s:Link)
-  let l:link.name = a:name
-  let l:link.forward = function(a:name . '_forward')
-  let l:link.backward = function(a:name . '_backward')
-  return l:link
+function! s:Function(name) abort
+  let l:func = deepcopy(s:Function)
+  let l:func.name = a:name
+  let l:func.forward = function(a:name . '_forward')
+  let l:func.backward = function(a:name . '_backward')
+  return l:func
 endfunction
 
 
 " Operations
 function! s:add(x0, x1) abort
-  return s:Link('s:add').call(a:x0, a:x1)
+  return s:Function('s:add').call(a:x0, a:x1)
 endfunction
 
 function! s:add_forward(inputs) dict abort
@@ -154,7 +180,7 @@ endfunction
 
 
 function! s:mul(x0, x1) abort
-  return s:Link('s:mul').call(a:x0, a:x1)
+  return s:Function('s:mul').call(a:x0, a:x1)
 endfunction
 
 function! s:mul_forward(inputs) dict abort
@@ -170,7 +196,7 @@ endfunction
 
 
 function! s:sub(x0, x1) abort
-  return s:Link('s:sub').call(a:x0, a:x1)
+  return s:Function('s:sub').call(a:x0, a:x1)
 endfunction
 
 function! s:sub_forward(inputs) dict abort
@@ -184,7 +210,7 @@ endfunction
 
 
 function! s:div(x0, x1) abort
-  return s:Link('s:div').call(a:x0, a:x1)
+  return s:Function('s:div').call(a:x0, a:x1)
 endfunction
 
 function! s:div_forward(inputs) dict abort
@@ -206,7 +232,7 @@ endfunction
 
 
 function! s:pow(x, c) abort
-  return s:Link('s:pow').call(a:x, a:c)
+  return s:Function('s:pow').call(a:x, a:c)
 endfunction
 
 function! s:pow_forward(inputs) dict abort
@@ -220,6 +246,11 @@ function! s:pow_backward() dict abort
 
   " gx = gy * c * x**(c - 1)
   return [l:gy.m(l:c.m(l:x.p(l:c.s(1))))]
+endfunction
+
+" Utilities
+function! s:gradcheck(func, inputs) abort
+  let l:eps = 1e-6
 endfunction
 
 
@@ -247,6 +278,17 @@ endfunction
 function! autograd#pow(x, c) abort
   return s:pow(a:x, a:c)
 endfunction
+
+
+" Utilities
+function! autograd#nograd_begin() abort
+  let s:enable_backprop = 0
+endfunction
+
+function! autograd#nograd_end() abort
+  let s:enable_backprop = 1
+endfunction
+
 
 function! s:test1() abort
   let l:x0 = s:Tensor(3)
@@ -276,3 +318,5 @@ function! s:test2() abort
   call l:y.backward()
   echo 'x.grad:' l:x.grad.data
 endfunction
+
+call s:test2()

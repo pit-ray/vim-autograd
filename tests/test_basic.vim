@@ -73,7 +73,10 @@ endfunction
 
 
 function! test_basic#run_test_suite() abort
-  call s:test_generation()
+
+  " call s:test_generation()
   call s:test_higer_order_differential()
-  call s:test_goldstein_price()
+  "call s:test_goldstein_price()
 endfunction
+
+call s:test_higer_order_differential()
