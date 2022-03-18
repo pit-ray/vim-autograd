@@ -26,4 +26,4 @@ jobs:
           make install
 
       - name: Test
-        run: $HOME/local/bin/vim -S tests/test.vim ; echo test_result.log
+        run: $HOME/local/bin/vim -S tests/test.vim ; cat test_result.log

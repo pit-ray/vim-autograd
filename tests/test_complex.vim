@@ -32,8 +32,6 @@ function! s:test_goldstein_price_gradcheck() abort
   let F = {xs -> s:goldstein_price(xs[0], xs[1])}
 
   call autograd#gradcheck(F, [x, y])
-
-  echo autograd#numerical_grad({k -> s:goldstein_price(k, y)}, x)
 endfunction
 
 
