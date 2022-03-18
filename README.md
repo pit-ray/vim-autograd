@@ -1,4 +1,5 @@
 # vim-autograd
+[![test](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml)  
 Define-by-Run style automatic differentiation library written in pure Vim Script.  
 
 It uses the same algorithm as Chainer and PyTorch to perform differentiation by generating a computational graph at runtime, making it easy to obtain derivative values even for complex expressions.
