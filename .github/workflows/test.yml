@@ -1,0 +1,25 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - v*.*.*
+
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-on-Ubuntu20.04:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: action/checkout@v2
+
+      - name: Build latest Vim
+        run: |
+          git clone https://github.com/vim/vim.git
+          cd vim ; make ; make install
+
+      - name: Test
+        run: vim -S tests/test.vim ; echo test_result.log
