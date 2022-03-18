@@ -18,8 +18,12 @@ jobs:
 
       - name: Build latest Vim
         run: |
-          git clone https://github.com/vim/vim.git
-          cd vim ; make ; make install
+          git clone https://github.com/vim/vim.git --depth=1 -j 4
+          cd vim
+          mkdir $HOME/local
+          ./configure --prefix=$HOME/local
+          make -j4
+          make install
 
       - name: Test
-        run: vim -S tests/test.vim ; echo test_result.log
+        run: $HOME/local/bin/vim -S tests/test.vim ; echo test_result.log
