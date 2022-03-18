@@ -5,6 +5,15 @@ on:
     branches: [main]
     tags:
       - v*.*.*
+    paths:
+      - '!README.md'
+      - '!.gitignore'
+      - '!LICENSE'
+      - '!doc/**'
+      - '.github/**'
+      - 'autoload/**'
+      - 'tests/**'
+      - 'examples/**'
 
   pull_request:
     branches: [main]

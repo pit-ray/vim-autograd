@@ -40,6 +40,9 @@ call s:example1()
 56
 ```
 
+### Visualize Graph
+<img src="doc/images/example1.png" height=400 />
+
 ## Installation
 ```vim
 Plug 'pit-ray/vim-autograd'

@@ -12,6 +12,10 @@ function! s:example1() abort
 
   " output: 56
   echo x.grad.data
+
+  let x.name = 'x'
+  let y.name = 'y'
+  call autograd#dump_graph(y, '.autograd/example1.png')
 endfunction
 
 call s:example1()
