@@ -31,6 +31,6 @@ function! s:test_higer_order_differential() abort
 endfunction
 
 
-function! test_higer_order#run_test_suite() abort
+function! test_higher_order#run_test_suite() abort
   call s:test_higer_order_differential()
 endfunction

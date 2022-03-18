@@ -12,7 +12,10 @@ let s:test_suite_runner = '#run_test_suite'
 let s:test_result_file = 'test_result.log'
 
 let s:test_suites = [
-  \ 'test_basic'
+  \ 'test_basic',
+  \ 'test_math',
+  \ 'test_complex',
+  \ 'test_higher_order'
   \ ]
 
 function! s:test() abort
