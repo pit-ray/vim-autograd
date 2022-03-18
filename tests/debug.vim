@@ -24,8 +24,11 @@ function! s:debug() abort
   let l:l3 = l:l1
   echo l:l1 is l:l2
   echo l:l1 is l:l3
+endfunction
 
+function! s:test2() abort
   let x = autograd#tensor(2.0)
+  let x.name = 'x'
   call assert_equal(2.0, x.data)
 
   echo '0 diff'
@@ -37,17 +40,25 @@ function! s:debug() abort
   call y.backward()
   call assert_equal(44.0, x.grad.data)
 
+
   echo '2 diff'
-  let gx = x.grad
+  let gx1 = x.grad
   call x.zero_grad()
-  call gx.backward()
+  call gx1.backward()
   call assert_equal(124.0, x.grad.data)
 
   echo '3 diff'
-  let gx = x.grad
+  let gx2 = x.grad
   call x.zero_grad()
-  call gx.backward()
+  call gx2.backward()
   call assert_equal(222.0, x.grad.data)
+
+  let gx3 = x.grad
+  call autograd#dump_graph(gx3, '.autograd/graph_3.png')
+  call x.zero_grad()
+  call gx3.backward()
+  let x.grad.name = 'gx3'
+  call assert_equal(240.0, x.grad.data)
 endfunction
 
-call s:debug()
+call s:test2()

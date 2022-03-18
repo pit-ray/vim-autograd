@@ -1,5 +1,5 @@
 function! s:test_add() abort
-  call assert_equal(1, 1)
+  call assert_equal(1, 2)
 endfunction
 
 function! s:test_mul() abort
@@ -73,10 +73,8 @@ endfunction
 
 
 function! test_basic#run_test_suite() abort
-
-  " call s:test_generation()
+  call s:test_add()
+  call s:test_generation()
   call s:test_higer_order_differential()
-  "call s:test_goldstein_price()
+  call s:test_goldstein_price()
 endfunction
-
-call s:test_higer_order_differential()

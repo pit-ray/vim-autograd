@@ -53,6 +53,7 @@ function! s:Tensor.backward(...) abort
   endif
 
   let l:funcs = [self.parent_fn]
+  let l:scanned_fnids = []
   while len(l:funcs) > 0
     let l:func = remove(l:funcs, -1)
     let l:gxs = l:func.backward()
@@ -70,7 +71,10 @@ function! s:Tensor.backward(...) abort
 
       call add(l:input_grads, l:input.grad)
 
+      " It prevents multiple calling backward() of the same function.
       if !empty(l:input.parent_fn)
+         \ && index(l:scanned_fnids, l:input.parent_fn.id) == -1
+        call add(l:scanned_fnids, l:input.parent_fn.id)
         call add(l:funcs, l:input.parent_fn)
       endif
     endfor
@@ -114,9 +118,8 @@ function! s:Tensor.n() abort
   return s:mul(self, -1)
 endfunction
 
-function! s:Tensor(data, ...) abort
+function! s:Tensor(data) abort
   let l:tensor = deepcopy(s:Tensor)
-  let l:tensor.name = get(a:, 1, '')
   let l:tensor.data = a:data
 
   let l:tensor.id = s:last_tensor_id + 1
@@ -268,37 +271,41 @@ function! s:gradcheck(func, inputs) abort
 endfunction
 
 function! s:dump_tensor_as_dotlang(tensor) abort
-  return [
-    \ a:tensor.id . '[label="' . a:tensor.name . '", color=lightblue, style=filled]'
-    \ ]
+  if empty(a:tensor.name) && !empty(a:tensor.data)
+    let a:tensor.name = a:tensor.data
+  endif
+  return a:tensor.id . '[label="' . a:tensor.name . '", color=lightblue, style=filled]'
 endfunction
 
 function! s:dump_func_as_dotlang(fn) abort
-  let l:texts = [
-    \ a:fn.id . '[label="' . a:fn.name . '", color=gray, style=filled, shape=box]'
-    \ ]
+  let l:def = a:fn.id . '[label="' . a:fn.name . '(' . a:fn.id . '", color=gray, style=filled, shape=box]'
 
+  let l:links = []
   for l:x in a:fn.inputs
-    call add(l:texts, l:x.id . ' -> ' . a:fn.id)
+    call add(l:links, l:x.id . ' -> ' . a:fn.id)
   endfor
 
   for l:y in a:fn.outputs
-    call add(l:texts, a:fn.id . ' -> ' . l:y.id)
+    call add(l:links, a:fn.id . ' -> ' . l:y.id)
   endfor
 
-  return l:texts
+  return [l:def, l:links]
 endfunction
 
-function! s:dump_as_dotlang(last_node, filename) abort
-  let l:texts = s:dump_tensor_as_dotlang(a:last_node)
+
+function! s:dump_as_dotlang(last_node, filepath) abort
+  let l:defs = [s:dump_tensor_as_dotlang(a:last_node)]
+  let l:links = []
   let l:funcs = [a:last_node.parent_fn]
 
   while len(l:funcs) > 0
     let l:func = remove(l:funcs, -1)
-    let l:texts += s:dump_func_as_dotlang(l:func)
+    let l:fn_dot = s:dump_func_as_dotlang(l:func)
+    call add(l:defs, l:fn_dot[0])
+    let l:links += l:fn_dot[1]
 
     for l:x in l:func.inputs
-      let l:texts += s:dump_tensor_as_dotlang(l:x)
+      call add(l:defs, s:dump_tensor_as_dotlang(l:x))
 
       if !empty(l:x.parent_fn)
         call add(l:funcs, l:x.parent_fn)
@@ -306,23 +313,35 @@ function! s:dump_as_dotlang(last_node, filename) abort
     endfor
   endwhile
 
-  call insert(l:texts, 'digraph g {', 0)
-  call add(l:texts, '}')
-  call writefile(l:texts, a:filename . '.dot')
+  let l:links = uniq(sort(l:links))
+
+  let l:texts = ['digraph g {'] + l:defs + l:links + ['}']
+
+  let l:paths = split(a:filepath, '/\|\')
+  let l:path = l:paths[-1]
+  if len(l:paths) > 1
+    let l:dir = join(l:paths[:-2], '/')
+    if !isdirectory(l:dir)
+      call mkdir(l:dir, 'p')
+    endif
+    let l:path = l:dir . '/' . l:path
+  endif
+
+  call writefile(l:texts, l:path . '.dot')
 
   if executable('dot')
     echo system(
-      \ 'dot ' . a:filename . '.dot' .
-      \ ' -T ' . split(a:filename, '\.')[-1] .
-      \ ' -o ' . a:filename
+      \ 'dot ' . l:path . '.dot' .
+      \ ' -T ' . split(l:path , '\.')[-1] .
+      \ ' -o ' . l:path
       \ )
   endif
 endfunction
 
 
 " API
-function! autograd#tensor(data, ...) abort
-  return s:Tensor(data, a:000)
+function! autograd#tensor(data) abort
+  return s:Tensor(a:data)
 endfunction
 
 function! autograd#add(x0, x1) abort
@@ -355,6 +374,10 @@ function! autograd#nograd_end() abort
   let s:enable_backprop = 1
 endfunction
 
+function! autograd#dump_graph(last_node, filepath) abort
+  return s:dump_as_dotlang(a:last_node, a:filepath)
+endfunction
+
 
 function! s:test1() abort
   let l:x0 = s:Tensor(3)
@@ -382,10 +405,10 @@ function! s:test2() abort
   let l:y = s:add(s:sub(s:mul(0.5, s:pow(l:x, 2)), s:mul(5, l:x)), 3)
   echo 'y     :' l:y.data
 
-  call s:dump_as_dotlang(l:y, 'test2.png')
+  call s:dump_as_dotlang(l:y, '.autograd/test2.png')
 
   call l:y.backward()
   echo 'x.grad:' l:x.grad.data
 endfunction
 
-call s:test2()
+" call s:test2()
