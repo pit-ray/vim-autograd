@@ -48,7 +48,6 @@ function! s:debug() abort
   call x.zero_grad()
   call gx.backward()
   call assert_equal(222.0, x.grad.data)
-
 endfunction
 
 call s:debug()
