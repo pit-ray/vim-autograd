@@ -154,24 +154,29 @@ let s:Function = {
   \ }
 
 function! s:Function.call(...) abort
-  let self.inputs = []
+  let l:inputs = []
   for l:input in a:000
-    call add(self.inputs, s:is_tensor(l:input) ? l:input : s:Tensor(l:input))
+    call add(l:inputs, s:is_tensor(l:input) ? l:input : s:Tensor(l:input))
   endfor
 
-  let self.outputs = self.forward(self.inputs)
+  let l:outputs = self.forward(l:inputs)
 
-  let l:gens = []
-  for l:input in self.inputs
-    call add(l:gens, l:input.gen)
-  endfor
-  let self.gen = max(l:gens)
+  if s:enable_backprop
+    let l:gens = []
+    for l:input in l:inputs
+      call add(l:gens, l:input.gen)
+    endfor
+    let self.gen = max(l:gens)
 
-  for l:output in self.outputs
-    call l:output.set_parent_fn(self)
-  endfor
+    for l:output in l:outputs
+      call l:output.set_parent_fn(self)
+    endfor
 
-  return len(self.outputs) > 1 ? self.outputs : self.outputs[0]
+    let self.inputs = l:inputs
+    let self.outputs = l:outputs
+  endif
+
+  return len(l:outputs) > 1 ? l:outputs : l:outputs[0]
 endfunction
 
 function! s:Function(name) abort

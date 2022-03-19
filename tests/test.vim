@@ -15,7 +15,8 @@ let s:test_suites = [
   \ 'test_basic',
   \ 'test_math',
   \ 'test_complex',
-  \ 'test_higher_order'
+  \ 'test_higher_order',
+  \ 'test_util'
   \ ]
 
 function! s:test() abort
