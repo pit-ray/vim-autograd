@@ -5,6 +5,12 @@ let s:last_func_id = v:numbermax / 2 - 1
 
 let s:eps = 0.000001
 
+function! s:error(msg) abort
+  echohl ErrorMsg
+  echomsg 'autograd: ' . a:msg
+  echohl None
+endfunction
+
 " Tensor
 let s:Tensor = {
   \ 'name': '',
@@ -13,6 +19,8 @@ let s:Tensor = {
   \ 'grad': {},
   \ 'parent_fn': {},
   \ 'gen': 0,
+  \ 'shape': [],
+  \ 'size': 0
   \ }
 
 function! s:Tensor.zero_grad() abort
@@ -47,7 +55,7 @@ function! s:Tensor.backward(...) abort
   let l:retain_fnout_grad = get(a:, 1, 0)
 
   if empty(self.grad)
-    let self.grad = s:Tensor(1.0)
+    let self.grad = s:tensor(1.0)
   endif
 
   if empty(self.parent_fn)
@@ -125,9 +133,16 @@ function! s:Tensor.n() abort
   return s:mul(self, -1)
 endfunction
 
-function! s:Tensor(data) abort
+function! s:Tensor.clone() abort
+  return s:Tensor(self.data, self.shape, self.size)
+endfunction
+
+function! s:Tensor(data, shape, size) abort
   let l:tensor = deepcopy(s:Tensor)
+
   let l:tensor.data = a:data
+  let l:tensor.shape = a:shape
+  let l:tensor.size = a:size
 
   let l:tensor.id = s:last_tensor_id + 1
   let s:last_tensor_id = l:tensor.id
@@ -139,6 +154,37 @@ function! s:is_tensor(x) abort
     return 0
   endif
   return has_key(a:x, 'data') && has_key(a:x, 'grad')
+endfunction
+
+function! s:tensor(data) abort
+  let l:data = type(a:data) != v:t_list ? [a:data] : a:data
+
+  let l:shape = s:get_matrix_shape(l:data)
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = flatten(l:data)
+
+  call map(l:data, 'v:val * 1.0')  " int to float
+
+  if len(l:data) != l:size
+    call s:error('Invalid matrix shape.')
+  endif
+  return s:Tensor(l:data, l:shape, l:size)
+endfunction
+
+function! s:zeros_like(tensor) abort
+  return s:Tensor(
+    \ s:vector(a:tensor.size, 0.0),
+    \ a:tensor.shape,
+    \ a:tensor.size
+    \ )
+endfunction
+
+function! s:ones_like(tensor) abort
+  return s:Tensor(
+    \ s:vector(a:tensor.size, 1.0),
+    \ a:tensor.shape,
+    \ a:tensor.size
+    \ )
 endfunction
 
 
@@ -156,7 +202,7 @@ let s:Function = {
 function! s:Function.call(...) abort
   let l:inputs = []
   for l:input in a:000
-    call add(l:inputs, s:is_tensor(l:input) ? l:input : s:Tensor(l:input))
+    call add(l:inputs, s:is_tensor(l:input) ? l:input : s:tensor(l:input))
   endfor
 
   let l:outputs = self.forward(l:inputs)
@@ -193,26 +239,13 @@ function! s:Function(name) abort
 endfunction
 
 
-" Maths
-function! s:isclose(a, b, ...) abort
-  let l:rtol = get(a:, 1, 0.00001)
-  let l:atol = get(a:, 2, 0.00000001)
-  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
-endfunction
-
-" it returns random value from 0.0 to 1.0.
-function! s:rand()
-  return rand() / 4294967295.0
-endfunction
-
-
 " Operations
 function! s:add(x0, x1) abort
   return s:Function('s:add').call(a:x0, a:x1)
 endfunction
 
 function! s:add_forward(xs) dict abort
-  return [s:Tensor(a:xs[0].data + a:xs[1].data)]
+  return [s:elemwise_binary_op({a, b -> a + b}, a:xs[0], a:xs[1])]
 endfunction
 
 function! s:add_backward(gys) dict abort
@@ -225,7 +258,7 @@ function! s:mul(x0, x1) abort
 endfunction
 
 function! s:mul_forward(xs) dict abort
-  return [s:Tensor(a:xs[0].data * a:xs[1].data)]
+  return [s:elemwise_binary_op({a, b -> a * b}, a:xs[0], a:xs[1])]
 endfunction
 
 function! s:mul_backward(gys) dict abort
@@ -240,7 +273,7 @@ function! s:sub(x0, x1) abort
 endfunction
 
 function! s:sub_forward(xs) dict abort
-  return [s:Tensor(a:xs[0].data - a:xs[1].data)]
+  return [s:elemwise_binary_op({a, b -> a - b}, a:xs[0], a:xs[1])]
 endfunction
 
 function! s:sub_backward(gys) dict abort
@@ -253,7 +286,7 @@ function! s:div(x0, x1) abort
 endfunction
 
 function! s:div_forward(xs) dict abort
-  return [s:Tensor(a:xs[0].data / a:xs[1].data)]
+  return [s:elemwise_binary_op({a, b -> a / b}, a:xs[0], a:xs[1])]
 endfunction
 
 function! s:div_backward(gys) dict abort
@@ -273,7 +306,7 @@ function! s:pow(x, c) abort
 endfunction
 
 function! s:pow_forward(xs) dict abort
-  return [s:Tensor(pow(a:xs[0].data, a:xs[1].data))]
+  return [s:elemwise_binary_op({a, b ->pow(a, b)}, a:xs[0], a:xs[1])]
 endfunction
 
 function! s:pow_backward(gys) dict abort
@@ -295,7 +328,7 @@ function! s:log(x) abort
 endfunction
 
 function! s:log_forward(xs) dict abort
-  return [s:Tensor(log(a:xs[0].data))]
+  return [s:elemwise_unary_op({a -> log(a)}, a:xs[0])]
 endfunction
 
 function! s:log_backward(gys) dict abort
@@ -304,10 +337,63 @@ function! s:log_backward(gys) dict abort
 endfunction
 
 
+" Utilities for raw data
+function! s:isclose(a, b, ...) abort
+  let l:rtol = get(a:, 1, 0.00001)
+  let l:atol = get(a:, 2, 0.00000001)
+  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
+endfunction
+
+" it returns random value from 0.0 to 1.0.
+function! s:rand()
+  return rand() / 4294967295.0
+endfunction
+
+function! s:vector(size, ...) abort
+  let l:init_val = get(a:, 1, 0.0)
+  let l:v = repeat([0.0], a:size)
+  return l:init_val != 0.0 ? map(l:v, l:init_val) : l:v
+endfunction
+
+function! s:shape_to_size(shape) abort
+  let l:size = 1
+  for l:x in a:shape
+    let l:size *= l:x
+  endfor
+  return l:size
+endfunction
+
+function! s:get_matrix_shape(array) abort
+  let l:shape = []
+  let l:sub_array = a:array
+  while type(l:sub_array) == v:t_list
+    call add(l:shape, len(l:sub_array))
+    let l:sub_array = l:sub_array[0]
+  endwhile
+  return l:shape
+endfunction
+
+function! s:elemwise_unary_op(func, x) abort
+  let l:tensor = s:zeros_like(a:x)
+  for l:i in range(a:x.size)
+    let l:tensor.data[l:i] = a:func(a:x.data[l:i])
+  endfor
+  return l:tensor
+endfunction
+
+function! s:elemwise_binary_op(func, x0, x1) abort
+  let l:tensor = s:zeros_like(a:x0)
+  for l:i in range(a:x0.size)
+    let l:tensor.data[l:i] = a:func(a:x0.data[l:i], a:x1.data[l:i])
+  endfor
+  return l:tensor
+endfunction
+
+
 " Utilities
 function! s:numerical_grad(f, x) abort
-  let l:y0 = a:f(s:Tensor(a:x.data - s:eps))
-  let l:y1 = a:f(s:Tensor(a:x.data + s:eps))
+  let l:y0 = a:f(s:tensor(a:x.data - s:eps))
+  let l:y1 = a:f(s:tensor(a:x.data + s:eps))
   return (l:y1.data - l:y0.data) / (2 * s:eps)
 endfunction
 
@@ -409,7 +495,7 @@ endfunction
 " API
 " Tensor
 function! autograd#tensor(data) abort
-  return s:Tensor(a:data)
+  return s:tensor(a:data)
 endfunction
 
 " Maths
@@ -462,3 +548,15 @@ endfunction
 function! autograd#dump_graph(last_node, filepath) abort
   return s:dump_as_dotlang(a:last_node, a:filepath)
 endfunction
+
+
+function! s:debug_area() abort
+  let t1 = s:tensor([[2, 4, 5], [5, 6, 6]])
+  let t2 = s:tensor([[2, 2, 2], [2, 2, 2]])
+
+  echo t1.data
+  let t3 = s:log(t1)
+  echo t3.data
+
+endfunction
+call s:debug_area()
