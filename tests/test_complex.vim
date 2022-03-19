@@ -1,6 +1,6 @@
-function! s:goldstein_price(x, y) abort
-  let x = a:x
-  let y = a:y
+function! s:goldstein_price(inputs) abort
+  let x = autograd#as_tensor(a:inputs[0])
+  let y = autograd#as_tensor(a:inputs[1])
 
   let t1 = x.a(y.a(1)).p(2)
   let t2 = x.m(-14).a(19).a(x.p(2).m(3)).s(y.m(14)).a(x.m(y.m(6))).a(y.p(2).m(3))
@@ -12,26 +12,24 @@ endfunction
 
 function! s:test_goldstein_price() abort
   let x = autograd#tensor(1.0)
-  call assert_equal(1.0, x.data)
+  call assert_equal([1.0], x.data)
 
   let y = autograd#tensor(1.0)
-  call assert_equal(1.0, y.data)
+  call assert_equal([1.0], y.data)
 
-  let z = s:goldstein_price(x, y)
-  call assert_equal(1876.0, z.data)
+  let z = s:goldstein_price([x, y])
+  call assert_equal([1876.0], z.data)
 
   call z.backward()
-  call assert_equal(-5376.0, x.grad.data)
-  call assert_equal(8064.0, y.grad.data)
+  call assert_equal([-5376.0], x.grad.data)
+  call assert_equal([8064.0], y.grad.data)
 endfunction
 
 function! s:test_goldstein_price_gradcheck() abort
   let x = autograd#tensor(autograd#rand() * 10)
   let y = autograd#tensor(autograd#rand() * 10)
 
-  let F = {xs -> s:goldstein_price(xs[0], xs[1])}
-
-  call autograd#gradcheck(F, [x, y])
+  call autograd#gradcheck(function('s:goldstein_price'), [x, y])
 endfunction
 
 

@@ -3,8 +3,6 @@ let s:enable_backprop = 1
 let s:last_tensor_id = 0
 let s:last_func_id = v:numbermax / 2 - 1
 
-let s:eps = 0.000001
-
 function! s:error(msg) abort
   echohl ErrorMsg
   echomsg 'autograd: ' . a:msg
@@ -55,7 +53,7 @@ function! s:Tensor.backward(...) abort
   let l:retain_fnout_grad = get(a:, 1, 0)
 
   if empty(self.grad)
-    let self.grad = s:tensor(1.0)
+    let self.grad = s:ones_like(self)
   endif
 
   if empty(self.parent_fn)
@@ -74,7 +72,6 @@ function! s:Tensor.backward(...) abort
     let l:gxs = l:func.backward(l:gys)
 
     let l:input_grads = []
-
     let l:input_num = len(l:gxs)
     for l:i in range(l:input_num)
       let l:input = l:func.inputs[l:i]
@@ -171,6 +168,10 @@ function! s:tensor(data) abort
   return s:Tensor(l:data, l:shape, l:size)
 endfunction
 
+function! s:as_tensor(data) abort
+  return s:is_tensor(a:data) ? a:data : s:tensor(a:data)
+endfunction
+
 function! s:zeros_like(tensor) abort
   return s:Tensor(
     \ s:vector(a:tensor.size, 0.0),
@@ -202,7 +203,7 @@ let s:Function = {
 function! s:Function.call(...) abort
   let l:inputs = []
   for l:input in a:000
-    call add(l:inputs, s:is_tensor(l:input) ? l:input : s:tensor(l:input))
+    call add(l:inputs, s:as_tensor(l:input))
   endfor
 
   let l:outputs = self.forward(l:inputs)
@@ -240,53 +241,94 @@ endfunction
 
 
 " Operations
+function! s:_add(x0, x1) abort
+  return a:x0 + a:x1
+endfunction
+
 function! s:add(x0, x1) abort
   return s:Function('s:add').call(a:x0, a:x1)
 endfunction
 
 function! s:add_forward(xs) dict abort
-  return [s:elemwise_binary_op({a, b -> a + b}, a:xs[0], a:xs[1])]
+  return [s:elemwise_binary_op(function('s:_add'), a:xs[0], a:xs[1])]
 endfunction
 
 function! s:add_backward(gys) dict abort
-  return [a:gys[0], a:gys[0]]
+  let l:x0 = self.inputs[0]
+  let l:x1 = self.inputs[1]
+
+  let l:gx0 = a:gys[0]
+  let l:gx1 = a:gys[0]
+
+  if l:x0.shape == l:x1.shape
+    return [l:gx0, l:gx1]
+  endif
+  return [s:sum_to(l:gx0, l:x0.shape), s:sum_to(l:gx1, l:x1.shape)]
 endfunction
 
+
+function! s:_mul(x0, x1) abort
+  return a:x0 * a:x1
+endfunction
 
 function! s:mul(x0, x1) abort
   return s:Function('s:mul').call(a:x0, a:x1)
 endfunction
 
 function! s:mul_forward(xs) dict abort
-  return [s:elemwise_binary_op({a, b -> a * b}, a:xs[0], a:xs[1])]
+  return [s:elemwise_binary_op(function('s:_mul'), a:xs[0], a:xs[1])]
 endfunction
 
 function! s:mul_backward(gys) dict abort
   let l:x0 = self.inputs[0]
   let l:x1 = self.inputs[1]
-  return [l:x1.m(a:gys[0]), l:x0.m(a:gys[0])]
+
+  let l:gx0 = l:x1.m(a:gys[0])
+  let l:gx1 = l:x0.m(a:gys[0])
+
+  if l:x0.shape == l:x1.shape
+    return [l:gx0, l:gx1]
+  endif
+  return [s:sum_to(l:gx0, l:x0.shape), s:sum_to(l:gx1, l:x1.shape)]
 endfunction
 
+
+function! s:_sub(x0, x1) abort
+  return a:x0 - a:x1
+endfunction
 
 function! s:sub(x0, x1) abort
   return s:Function('s:sub').call(a:x0, a:x1)
 endfunction
 
 function! s:sub_forward(xs) dict abort
-  return [s:elemwise_binary_op({a, b -> a - b}, a:xs[0], a:xs[1])]
+  return [s:elemwise_binary_op(function('s:_sub'), a:xs[0], a:xs[1])]
 endfunction
 
 function! s:sub_backward(gys) dict abort
-  return [a:gys[0], a:gys[0].n()]
+  let l:x0 = self.inputs[0]
+  let l:x1 = self.inputs[1]
+
+  let l:gx0 = a:gys[0]
+  let l:gx1 = a:gys[0].n()
+
+  if l:x0.shape == l:x1.shape
+    return [l:gx0, l:gx1]
+  endif
+  return [s:sum_to(l:gx0, l:x0.shape), s:sum_to(l:gx1, l:x1.shape)]
 endfunction
 
+
+function! s:_div(x0, x1) abort
+  return a:x0 / a:x1
+endfunction
 
 function! s:div(x0, x1) abort
   return s:Function('s:div').call(a:x0, a:x1)
 endfunction
 
 function! s:div_forward(xs) dict abort
-  return [s:elemwise_binary_op({a, b -> a / b}, a:xs[0], a:xs[1])]
+  return [s:elemwise_binary_op(function('s:_div'), a:xs[0], a:xs[1])]
 endfunction
 
 function! s:div_backward(gys) dict abort
@@ -298,7 +340,10 @@ function! s:div_backward(gys) dict abort
   " gx1 = gy * -(x0 / x1 ** 2)
   let l:gx1 = s:mul(a:gys[0], l:x0.d(l:x1.p(2)).n())
 
-  return [l:gx0, l:gx1]
+  if l:x0.shape == l:x1.shape
+    return [l:gx0, l:gx1]
+  endif
+  return [s:sum_to(l:gx0, l:x0.shape), s:sum_to(l:gx1, l:x1.shape)]
 endfunction
 
 function! s:pow(x, c) abort
@@ -319,7 +364,11 @@ function! s:pow_backward(gys) dict abort
 
   " gc = gy * y * log(x)
   let l:gc = s:mul(a:gys[0], l:y.m(s:log(l:x)))
-  return [l:gx, l:gc]
+
+  if l:x.shape == l:c.shape
+    return [l:gx, l:gc]
+  endif
+  return [s:sum_to(l:gx, l:x.shape), s:sum_to(l:gc, l:c.shape)]
 endfunction
 
 
@@ -337,12 +386,75 @@ function! s:log_backward(gys) dict abort
 endfunction
 
 
-" Utilities for raw data
-function! s:isclose(a, b, ...) abort
-  let l:rtol = get(a:, 1, 0.00001)
-  let l:atol = get(a:, 2, 0.00000001)
-  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
+function! s:sum(x) abort
+  return s:Function('s:sum').call(a:x)
 endfunction
+
+function! s:sum_forward(xs) dict abort
+  let self['x_shape'] = a:xs[0].shape
+
+  let l:total = 0
+  for l:e in a:xs[0].data
+    let l:total += l:e
+  endfor
+
+  return [s:Tensor(l:total, [1], 1)]
+endfunction
+
+function! s:sum_backward(gys) dict abort
+  return [s:broadcast_to(a:gys[0], self.x_shape)]
+endfunction
+
+
+function! s:broadcast_to(x, shape) abort
+  let l:xt = s:as_tensor(a:x)
+  if l:xt.shape == a:shape
+    return l:xt
+  endif
+
+  let l:fn = s:Function('s:broadcast_to')
+  let l:fn['shape'] = a:shape
+  return l:fn.call(a:x)
+endfunction
+
+function! s:broadcast_to_forward(xs) dict abort
+  let l:x = a:xs[0]
+
+  " TODO: currently only scalar broadcast are supported.
+  if l:x.size > 1
+    call s:error('matrix broadcast is not supported yet.')
+  endif
+
+  let self['x_shape'] = l:x.shape
+
+  let l:size = s:shape_to_size(self.shape)
+  return [s:Tensor(s:vector(l:size, l:x.data[0]), self.shape, l:size)]
+endfunction
+
+function! s:broadcast_to_backward(gys) dict abort
+  " assume the input size is 1
+  return [s:sum_to(a:gys[0], self.x_shape)]
+endfunction
+
+
+function! s:sum_to(x, shape) abort
+  let l:xt = s:as_tensor(a:x)
+  if l:xt.shape == a:shape
+    return l:xt
+  endif
+
+  if s:shape_to_size(a:shape) > 1
+    call s:error('matrix sum_to is not supported yet.')
+  endif
+
+  let l:fn = s:Function('s:sum_to')
+  let l:fn.forward = function('s:sum_forward')
+  let l:fn.backward = function('s:sum_backward')
+
+  " let l:fn['shape'] = a:shape
+  return l:fn.call(a:x)
+endfunction
+
 
 " it returns random value from 0.0 to 1.0.
 function! s:rand()
@@ -382,8 +494,28 @@ function! s:elemwise_unary_op(func, x) abort
 endfunction
 
 function! s:elemwise_binary_op(func, x0, x1) abort
-  let l:tensor = s:zeros_like(a:x0)
-  for l:i in range(a:x0.size)
+  let l:tensor = s:zeros_like(a:x0.size > a:x1.size ? a:x0 : a:x1)
+
+  " If at least one of them is scalar, it broadcast.
+  if a:x0.size == 1 || a:x1.size == 1
+    if a:x0.size == l:tensor.size
+      for l:i in range(l:tensor.size)
+        let l:tensor.data[l:i] = a:func(a:x0.data[l:i], a:x1.data[0])
+      endfor
+    else
+      for l:i in range(l:tensor.size)
+        let l:tensor.data[l:i] = a:func(a:x0.data[0], a:x1.data[l:i])
+      endfor
+    endif
+    return l:tensor
+  endif
+
+  if a:x0.shape != a:x1.shape
+    call s:error('matrix broadcast is not supported yet.')
+    return l:tensor
+  endif
+
+  for l:i in range(l:tensor.size)
     let l:tensor.data[l:i] = a:func(a:x0.data[l:i], a:x1.data[l:i])
   endfor
   return l:tensor
@@ -391,10 +523,32 @@ endfunction
 
 
 " Utilities
+function! s:isclose(a, b, ...) abort
+  let l:rtol = get(a:, 1, 0.00001)
+  let l:atol = get(a:, 2, 0.00000001)
+  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
+endfunction
+
+function! s:allclose(a, b, ...) abort
+  let l:rtol = get(a:, 1, 0.00001)
+  let l:atol = get(a:, 2, 0.00000001)
+
+  let l:results = s:elemwise_binary_op(function('s:isclose'), a:a, a:b)
+  return min(l:results.data) == 1
+endfunction
+
 function! s:numerical_grad(f, x) abort
-  let l:y0 = a:f(s:tensor(a:x.data - s:eps))
-  let l:y1 = a:f(s:tensor(a:x.data + s:eps))
-  return (l:y1.data - l:y0.data) / (2 * s:eps)
+  let l:eps = s:tensor(0.000001)
+  let l:dx = s:tensor(l:eps.data[0] * 2)
+
+  let l:x0 = s:elemwise_binary_op(function('s:_sub'), a:x, l:eps)
+  let l:x1 = s:elemwise_binary_op(function('s:_add'), a:x, l:eps)
+
+  let l:y0 = s:elemwise_unary_op(a:f, l:x0)
+  let l:y1 = s:elemwise_unary_op(a:f, l:x1)
+
+  let l:dy = s:elemwise_binary_op(function('s:_sub'), l:y1, l:y0)
+  return s:elemwise_binary_op(function('s:_div'), l:dy, l:dx)
 endfunction
 
 function! s:gradcheck(f, inputs) abort
@@ -407,21 +561,19 @@ function! s:gradcheck(f, inputs) abort
 
   let l:grads = []
   for l:x in a:inputs
-    call add(l:grads, l:x.grad.data)
+    call add(l:grads, l:x.grad)
   endfor
 
-  let l:result = 1
   let l:input_num = len(a:inputs)
   for l:i in range(l:input_num)
     let l:before_args = l:i > 0 ? a:inputs[:l:i - 1] : []
     let l:after_args = l:i < l:input_num - 1 ? a:inputs[l:i + 1:] : []
 
     let l:num_grad = s:numerical_grad(
-      \ {x -> a:f(l:before_args + [x] + l:after_args)},
-      \ a:inputs[l:i]
-      \ )
+      \ {x -> a:f(l:before_args + [x] + l:after_args).data[0]},
+      \ a:inputs[l:i])
 
-    call assert_true(s:isclose(l:grads[l:i], l:num_grad))
+    call assert_true(s:allclose(l:grads[l:i], l:num_grad))
   endfor
 endfunction
 
@@ -446,7 +598,7 @@ function! s:dump_func_as_dotlang(fn) abort
 endfunction
 
 
-function! s:dump_as_dotlang(last_node, filepath) abort
+function! s:dump_graph(last_node, filepath) abort
   let l:defs = [s:dump_tensor_as_dotlang(a:last_node)]
   let l:links = []
   let l:funcs = [a:last_node.parent_fn]
@@ -498,12 +650,28 @@ function! autograd#tensor(data) abort
   return s:tensor(a:data)
 endfunction
 
+function! autograd#as_tensor(data) abort
+  return s:as_tensor(a:data)
+endfunction
+
+function! autograd#zeros_like(tensor) abort
+  return s:zeros_like(a:tensor)
+endfunction
+
+function! autograd#ones_like(tensor) abort
+  return s:ones_like(a:tensor)
+endfunction
+
 " Maths
 function! autograd#rand() abort
   return s:rand()
 endfunction
 
 " Functions
+function! autograd#Function(name) abort
+  return s:Function(a:name)
+endfunction
+
 function! autograd#add(x0, x1) abort
   return s:add(a:x0, a:x1)
 endfunction
@@ -528,6 +696,14 @@ function! autograd#log(x) abort
   return s:log(a:x)
 endfunction
 
+function! autograd#sum(x) abort
+  return s:sum(a:x)
+endfunction
+
+function! autograd#broadcast_to(x, shape) abort
+  return s:broadcast_to(a:x, a:shape)
+endfunction
+
 " Utilities
 function! autograd#nograd_begin() abort
   let s:enable_backprop = 0
@@ -546,17 +722,5 @@ function! autograd#gradcheck(f, inputs) abort
 endfunction
 
 function! autograd#dump_graph(last_node, filepath) abort
-  return s:dump_as_dotlang(a:last_node, a:filepath)
+  return s:dump_graph(a:last_node, a:filepath)
 endfunction
-
-
-function! s:debug_area() abort
-  let t1 = s:tensor([[2, 4, 5], [5, 6, 6]])
-  let t2 = s:tensor([[2, 2, 2], [2, 2, 2]])
-
-  echo t1.data
-  let t3 = s:log(t1)
-  echo t3.data
-
-endfunction
-call s:debug_area()

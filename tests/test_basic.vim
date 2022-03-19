@@ -50,8 +50,8 @@ function! s:test_generation() abort
   let y = autograd#add(x.p(2).p(2), x.p(2).p(2))
   call y.backward()
 
-  call assert_equal(32.0, y.data)
-  call assert_equal(64.0, x.grad.data)
+  call assert_equal([32.0], y.data)
+  call assert_equal([64.0], x.grad.data)
 endfunction
 
 
