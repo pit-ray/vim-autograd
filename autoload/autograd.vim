@@ -40,15 +40,6 @@ function! s:comp_tensor_gen(lhs, rhs) abort
   endif
 endfunction
 
-function! s:has_instance(list, value)
-  for l:e in a:list
-    if l:e is a:value
-      return 1
-    endif
-  endfor
-  return 0
-endfunction
-
 function! s:Tensor.backward(...) abort
   let l:retain_fnout_grad = get(a:, 1, 0)
 
@@ -61,7 +52,7 @@ function! s:Tensor.backward(...) abort
   endif
 
   let l:funcs = [self.parent_fn]
-  let l:scanned_fnids = []
+  let l:scanned_fn_ids = []
   while len(l:funcs) > 0
     let l:func = remove(l:funcs, -1)
 
@@ -71,7 +62,7 @@ function! s:Tensor.backward(...) abort
     endfor
     let l:gxs = l:func.backward(l:gys)
 
-    let l:input_grads = []
+    let l:input_grad_ids = []
     let l:input_num = len(l:gxs)
     for l:i in range(l:input_num)
       let l:input = l:func.inputs[l:i]
@@ -81,12 +72,12 @@ function! s:Tensor.backward(...) abort
         let l:input.grad = s:add(l:input.grad, l:gxs[l:i])
       endif
 
-      call add(l:input_grads, l:input.grad)
+      call add(l:input_grad_ids, l:input.grad.id)
 
       " It prevents multiple calling backward() of the same function.
       if !empty(l:input.parent_fn)
-         \ && index(l:scanned_fnids, l:input.parent_fn.id) == -1
-        call add(l:scanned_fnids, l:input.parent_fn.id)
+         \ && index(l:scanned_fn_ids, l:input.parent_fn.id) == -1
+        call add(l:scanned_fn_ids, l:input.parent_fn.id)
         call add(l:funcs, l:input.parent_fn)
       endif
     endfor
@@ -98,7 +89,7 @@ function! s:Tensor.backward(...) abort
     " Therefore, we usually release.
     if !l:retain_fnout_grad
       for l:output in l:func.outputs
-        if !s:has_instance(l:input_grads, l:output.grad)
+        if index(l:input_grad_ids, l:output.grad.id) == -1
           let l:output.grad = {}
         endif
       endfor
