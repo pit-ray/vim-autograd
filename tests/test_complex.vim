@@ -26,8 +26,8 @@ function! s:test_goldstein_price() abort
 endfunction
 
 function! s:test_goldstein_price_gradcheck() abort
-  let x = autograd#rand(2, 3).m(10).detach()
-  let y = autograd#rand(2, 3).m(10).detach()
+  let x = autograd#uniform(0, 10, [2, 3])
+  let y = autograd#uniform(0, 10, [2, 3])
 
   call autograd#gradcheck(function('s:goldstein_price'), [x, y])
 endfunction

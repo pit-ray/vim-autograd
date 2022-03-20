@@ -3,6 +3,8 @@ let s:enable_backprop = 1
 let s:last_tensor_id = 0
 let s:last_func_id = v:numbermax / 2 - 1
 
+let s:pi = acos(-1.0)
+
 function! s:error(msg) abort
   echohl ErrorMsg
   echomsg 'autograd: ' . a:msg
@@ -717,8 +719,12 @@ endfunction
 
 
 " it returns random value from 0.0 to 1.0.
-function! s:rand()
+function! s:random_sample()
   return rand() / 4294967295.0
+endfunction
+
+function! s:box_muller(u1, u2) abort
+  return sqrt(-2 * log(a:u1)) * cos(2 * s:pi * a:u2)
 endfunction
 
 function! s:vector(size, ...) abort
@@ -854,8 +860,6 @@ function! s:gradcheck(f, inputs) abort
       \ {x -> a:f(l:before_args + [x] + l:after_args)},
       \ a:inputs[l:i])
 
-    echo l:num_grad.data
-
     call assert_true(s:allclose(l:grads[l:i], l:num_grad))
   endfor
   call s:nograd_end()
@@ -956,17 +960,41 @@ endfunction
 
 " Maths
 function! autograd#rand(...) abort
-  let l:shape = a:0 > 1 ? a:000 : [1]
+  let l:shape = a:0 > 0 ? a:000 : [1]
   let l:size = s:shape_to_size(l:shape)
-  let l:data = map(repeat([0.0], l:size), 's:rand()')
+  let l:data = map(repeat([0.0], l:size), 's:random_sample()')
   return s:Tensor(l:data, l:shape, l:size)
 endfunction
 
-function! autograd#randn() abort
+function! autograd#uniform(...) abort
+  let l:low = get(a:, 1, 0.0) * 1.0
+  let l:high = get(a:, 2, 1.0) * 1.0
+  let l:shape = get(a:, 3, [1])
+
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(
+    \ repeat([0.0], l:size),
+    \ 'l:low + (l:high - l:low) * s:random_sample()')
+  return s:Tensor(l:data, l:shape, l:size)
 endfunction
 
-function! autograd#normal() abort
+function! autograd#randn(...) abort
+  let l:shape = a:0 > 0 ? a:000 : [1]
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(
+    \ repeat([0.0], l:size),
+    \ 's:box_muller(s:random_sample(), s:random_sample())')
+  return s:Tensor(l:data, l:shape, l:size)
+endfunction
 
+function! autograd#normal(mean, std, ...) abort
+  let l:shape = get(a:, 1, [1])
+
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(
+    \ repeat([0.0], l:size),
+    \ 'a:std * s:box_muller(s:random_sample(), s:random_sample()) + a:mean')
+  return s:Tensor(l:data, l:shape, l:size)
 endfunction
 
 " Functions

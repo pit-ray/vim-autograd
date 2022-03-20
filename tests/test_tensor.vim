@@ -46,9 +46,9 @@ function! s:test_as_tensor() abort
 endfunction
 
 function! s:test_zeros() abort
-  let d1 = float2nr(autograd#rand().data[0] * 10 + 1)
-  let d2 = float2nr(autograd#rand().data[0] * 10 + 1)
-  let d3 = float2nr(autograd#rand().data[0] * 10 + 1)
+  let d1 = float2nr(autograd#uniform(1, 10).data[0])
+  let d2 = float2nr(autograd#uniform(1, 10).data[0])
+  let d3 = float2nr(autograd#uniform(1, 10).data[0])
 
   let x = autograd#zeros([d1, d2, d3])
   call assert_equal([d1, d2, d3], x.shape)
@@ -76,9 +76,9 @@ function! s:test_zeros_like() abort
 endfunction
 
 function! s:test_ones() abort
-  let d1 = float2nr(autograd#rand().data[0] * 10 + 1)
-  let d2 = float2nr(autograd#rand().data[0] * 10 + 1)
-  let d3 = float2nr(autograd#rand().data[0] * 10 + 1)
+  let d1 = float2nr(autograd#uniform(1, 10).data[0])
+  let d2 = float2nr(autograd#uniform(1, 10).data[0])
+  let d3 = float2nr(autograd#uniform(1, 10).data[0])
 
   let x = autograd#ones([d1, d2, d3])
   call assert_equal([d1, d2, d3], x.shape)
