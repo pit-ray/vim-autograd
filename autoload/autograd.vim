@@ -448,6 +448,20 @@ function! s:cos_backward(gys) dict abort
 endfunction
 
 
+function! s:tanh(x) abort
+  return s:Function('s:tanh').call(a:x)
+endfunction
+
+function! s:tanh_forward(xs) dict abort
+  return [s:elemwise_unary_op({a -> tanh(a)}, a:xs[0])]
+endfunction
+
+function! s:tanh_backward(gys) dict abort
+  let l:y = self.outputs[0]
+  return [s:mul(a:gys[0], s:sub(1, l:y.p(2)))]
+endfunction
+
+
 function! s:_sum(x) abort
   let l:total = 0
   for l:e in a:x.data
@@ -794,6 +808,10 @@ endfunction
 
 function! autograd#cos(x) abort
   return s:cos(a:x)
+endfunction
+
+function! autograd#tanh(x) abort
+  return s:tanh(a:x)
 endfunction
 
 function! autograd#sum(x) abort

@@ -22,9 +22,16 @@ function! s:test_cos() abort
   call autograd#gradcheck(F, [x])
 endfunction
 
+function! s:test_tanh() abort
+  let F = {xs -> autograd#tanh(xs[0])}
+  let x = autograd#tensor(autograd#rand())
+  call autograd#gradcheck(F, [x])
+endfunction
+
 function! test_math#run_test_suite() abort
   call s:test_log()
   call s:test_exp()
   call s:test_sin()
   call s:test_cos()
+  call s:test_tanh()
 endfunction
