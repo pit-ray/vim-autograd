@@ -472,11 +472,24 @@ endfunction
 
 function! s:abs_backward(gys) dict abort
   let l:x = self.inputs[0]
-
+  return [s:mul(a:gys[0], s:sign(l:x))]
 endfunction
 
+
 function! s:_sign(x) abort
-  return a:x > 0 ? 1 : (a:x < -1 ? -1 : 0)
+  return a:x > 0.0 ? 1.0 : (a:x < -1.0 ? -1.0 : 0.0)
+endfunction
+
+function! s:sign(x) abort
+  return s:Function('s:sign').apply(a:x)
+endfunction
+
+function! s:sign_forward(xs) dict abort
+  return [s:elementwise(function('s:_sign'), a:xs)]
+endfunction
+
+function! s:sign_backward(gys) dict abort
+  return [s:mul(a:gys[0], 0.0)]
 endfunction
 
 
@@ -833,6 +846,14 @@ endfunction
 
 function! autograd#tanh(x) abort
   return s:tanh(a:x)
+endfunction
+
+function! autograd#abs(x) abort
+  return s:abs(a:x)
+endfunction
+
+function! autograd#sign(x) abort
+  return s:sign(a:x)
 endfunction
 
 function! autograd#sum(x) abort
