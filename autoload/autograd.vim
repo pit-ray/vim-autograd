@@ -42,7 +42,7 @@ endfunction
 
 function! s:Tensor.backward(...) abort
   let l:create_graph = get(a:, 1, 0)
-  let l:retain_fnout_grad = get(a:, 2, 0)
+  let l:retain_outgrad = get(a:, 2, 0)
 
   if empty(self.grad)
     let self.grad = s:ones_like(self)
@@ -95,7 +95,7 @@ function! s:Tensor.backward(...) abort
     " Usually when we differentiate y=f(x) we are
     " interested in df/dx and do not need df/dy(=1) etc.
     " Therefore, we usually release.
-    if !l:retain_fnout_grad
+    if !l:retain_outgrad
       for l:output in l:func.outputs
         if index(l:input_grad_ids, l:output.grad.id) == -1
           let l:output.grad = {}
@@ -459,6 +459,24 @@ endfunction
 function! s:tanh_backward(gys) dict abort
   let l:y = self.outputs[0]
   return [s:mul(a:gys[0], s:sub(1, l:y.p(2)))]
+endfunction
+
+
+function! s:abs(x) abort
+  return s:Function('s:abs').apply(a:x)
+endfunction
+
+function! s:abs_forward(xs) dict abort
+  return [s:elementwise({a -> abs(a)}, a:xs)]
+endfunction
+
+function! s:abs_backward(gys) dict abort
+  let l:x = self.inputs[0]
+
+endfunction
+
+function! s:_sign(x) abort
+  return a:x > 0 ? 1 : (a:x < -1 ? -1 : 0)
 endfunction
 
 
@@ -830,6 +848,30 @@ function! autograd#pi() abort
 endfunction
 
 " Utilities
+function! autograd#grad(output, inputs, ...) abort
+  let l:create_graph = get(a:, 1, 0)
+  let l:retain_outgrad = get(a:, 2, 0)
+
+  let l:xs = s:is_tensor(a:inputs) ? [a:inputs] : a:inputs
+
+  let l:old_grads = []
+  for l:x in l:xs
+    call add(l:old_grads, l:x.grad)
+    call l:x.zero_grad()
+  endfor
+
+  call a:output.backward(l:create_graph, l:retain_outgrad)
+
+  let l:grads = []
+  for l:i in range(len(l:xs))
+    call add(l:grads, l:xs[l:i].grad)
+    let l:xs[l:i].grad = l:old_grads[l:i]
+  endfor
+
+  return len(l:grads) > 1 ? l:grads : l:grads[0]
+endfunction
+
+
 function! autograd#nograd_begin() abort
   return s:nograd_begin()
 endfunction
