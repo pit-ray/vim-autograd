@@ -21,7 +21,7 @@ let s:Tensor = {
   \ 'size': 0
   \ }
 
-function! s:Tensor.zero_grad() abort
+function! s:Tensor.cleargrad() abort
   let self.grad = {}
 endfunction
 
@@ -139,6 +139,12 @@ function! s:Tensor.T() abort
 endfunction
 
 function! s:Tensor.clone() abort
+  return s:Tensor(copy(self.data), copy(self.shape), self.size)
+endfunction
+
+" It returns a new tensor detached from the current graph.
+" However, returned tensor shares the same data and shape attribute.
+function! s:Tensor.detach() abort
   return s:Tensor(self.data, self.shape, self.size)
 endfunction
 
@@ -743,8 +749,11 @@ function! s:elementwise(func, inputs) abort
   if len(a:inputs) == 1
     let l:x = a:inputs[0]
     let l:tensor = s:zeros_like(l:x)
+
+    let l:td = l:tensor.data
+    let l:xd = l:x.data
     for l:i in range(l:x.size)
-      let l:tensor.data[l:i] = a:func(l:x.data[l:i])
+      let l:td[l:i] = a:func(l:xd[l:i])
     endfor
     return l:tensor
   endif
@@ -753,15 +762,19 @@ function! s:elementwise(func, inputs) abort
   let l:x1 = a:inputs[1]
   let l:tensor = s:zeros_like(l:x0.size > l:x1.size ? l:x0 : l:x1)
 
+  let l:td = l:tensor.data
+  let l:x0d = l:x0.data
+  let l:x1d = l:x1.data
+
   " If at least one of them is scalar, it broadcast.
   if l:x0.size == 1 || l:x1.size == 1
     if l:x0.size == l:tensor.size
       for l:i in range(l:tensor.size)
-        let l:tensor.data[l:i] = a:func(l:x0.data[l:i], l:x1.data[0])
+        let l:td[l:i] = a:func(l:x0d[l:i], l:x1d[0])
       endfor
     else
       for l:i in range(l:tensor.size)
-        let l:tensor.data[l:i] = a:func(l:x0.data[0], l:x1.data[l:i])
+        let l:td[l:i] = a:func(l:x0d[0], l:x1d[l:i])
       endfor
     endif
     return l:tensor
@@ -773,7 +786,7 @@ function! s:elementwise(func, inputs) abort
   endif
 
   for l:i in range(l:tensor.size)
-    let l:tensor.data[l:i] = a:func(l:x0.data[l:i], l:x1.data[l:i])
+    let l:td[l:i] = a:func(l:x0d[l:i], l:x1d[l:i])
   endfor
   return l:tensor
 endfunction
@@ -808,21 +821,21 @@ function! s:numerical_grad(f, x) abort
   let l:eps = s:tensor(0.000001)
   let l:dx = s:tensor(l:eps.data[0] * 2)
 
-  let l:x0 = s:elementwise(function('s:_sub'), [a:x, l:eps])
-  let l:x1 = s:elementwise(function('s:_add'), [a:x, l:eps])
+  let l:x0 = s:sub(a:x, l:eps)
+  let l:x1 = s:add(a:x, l:eps)
 
-  let l:y0 = s:elementwise(a:f, [l:x0])
-  let l:y1 = s:elementwise(a:f, [l:x1])
+  let l:y0 = a:f(l:x0)
+  let l:y1 = a:f(l:x1)
 
-  let l:dy = s:elementwise(function('s:_sub'), [l:y1, l:y0])
-  return s:elementwise(function('s:_div'), [l:dy, l:dx])
+  let l:dy = s:sub(l:y1, l:y0)
+  return s:div(l:dy, l:dx)
 endfunction
 
 function! s:gradcheck(f, inputs) abort
   let l:y = a:f(a:inputs)
 
   for l:x in a:inputs
-    call l:x.zero_grad()
+    call l:x.cleargrad()
   endfor
   call l:y.backward()
 
@@ -831,17 +844,21 @@ function! s:gradcheck(f, inputs) abort
     call add(l:grads, l:x.grad)
   endfor
 
+  call s:nograd_begin()
   let l:input_num = len(a:inputs)
   for l:i in range(l:input_num)
     let l:before_args = l:i > 0 ? a:inputs[:l:i - 1] : []
     let l:after_args = l:i < l:input_num - 1 ? a:inputs[l:i + 1:] : []
 
     let l:num_grad = s:numerical_grad(
-      \ {x -> a:f(l:before_args + [x] + l:after_args).data[0]},
+      \ {x -> a:f(l:before_args + [x] + l:after_args)},
       \ a:inputs[l:i])
+
+    echo l:num_grad.data
 
     call assert_true(s:allclose(l:grads[l:i], l:num_grad))
   endfor
+  call s:nograd_end()
 endfunction
 
 
@@ -938,8 +955,18 @@ function! autograd#ones_like(tensor) abort
 endfunction
 
 " Maths
-function! autograd#rand() abort
-  return s:rand()
+function! autograd#rand(...) abort
+  let l:shape = a:0 > 1 ? a:000 : [1]
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(repeat([0.0], l:size), 's:rand()')
+  return s:Tensor(l:data, l:shape, l:size)
+endfunction
+
+function! autograd#randn() abort
+endfunction
+
+function! autograd#normal() abort
+
 endfunction
 
 " Functions
@@ -1025,7 +1052,7 @@ function! autograd#grad(output, inputs, ...) abort
   let l:old_grads = []
   for l:x in l:xs
     call add(l:old_grads, l:x.grad)
-    call l:x.zero_grad()
+    call l:x.cleargrad()
   endfor
 
   call a:output.backward(l:create_graph, l:retain_outgrad)

@@ -1,10 +1,10 @@
-function! s:test_zerograd() abort
+function! s:test_cleargrad() abort
   let x = autograd#tensor(2.0)
   let y = x.m(60)
   call y.backward()
   call assert_equal([60.0], x.grad.data)
 
-  call x.zero_grad()
+  call x.cleargrad()
   call assert_true(empty(x.grad))
 endfunction
 
@@ -46,9 +46,9 @@ function! s:test_as_tensor() abort
 endfunction
 
 function! s:test_zeros() abort
-  let d1 = float2nr(autograd#rand() * 10 + 1)
-  let d2 = float2nr(autograd#rand() * 10 + 1)
-  let d3 = float2nr(autograd#rand() * 10 + 1)
+  let d1 = float2nr(autograd#rand().data[0] * 10 + 1)
+  let d2 = float2nr(autograd#rand().data[0] * 10 + 1)
+  let d3 = float2nr(autograd#rand().data[0] * 10 + 1)
 
   let x = autograd#zeros([d1, d2, d3])
   call assert_equal([d1, d2, d3], x.shape)
@@ -76,9 +76,9 @@ function! s:test_zeros_like() abort
 endfunction
 
 function! s:test_ones() abort
-  let d1 = float2nr(autograd#rand() * 10 + 1)
-  let d2 = float2nr(autograd#rand() * 10 + 1)
-  let d3 = float2nr(autograd#rand() * 10 + 1)
+  let d1 = float2nr(autograd#rand().data[0] * 10 + 1)
+  let d2 = float2nr(autograd#rand().data[0] * 10 + 1)
+  let d3 = float2nr(autograd#rand().data[0] * 10 + 1)
 
   let x = autograd#ones([d1, d2, d3])
   call assert_equal([d1, d2, d3], x.shape)
@@ -117,7 +117,7 @@ endfunction
 
 
 function! test_tensor#run_test_suite() abort
-  call s:test_zerograd()
+  call s:test_cleargrad()
   call s:test_clone()
   call s:test_tensor()
   call s:test_as_tensor()
