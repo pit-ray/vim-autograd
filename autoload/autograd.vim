@@ -405,6 +405,49 @@ function! s:log_backward(gys) dict abort
   return [s:div(a:gys[0], l:x)]
 endfunction
 
+
+function! s:exp(x) abort
+  return s:Function('s:exp').call(a:x)
+endfunction
+
+function! s:exp_forward(xs) dict abort
+  return [s:elemwise_unary_op({a -> exp(a)}, a:xs[0])]
+endfunction
+
+function! s:exp_backward(gys) dict abort
+  let l:y = self.outputs[0]
+  return [s:mul(a:gys[0], l:y)]
+endfunction
+
+
+function! s:sin(x) abort
+  return s:Function('s:sin').call(a:x)
+endfunction
+
+function! s:sin_forward(xs) dict abort
+  return [s:elemwise_unary_op({a -> sin(a)}, a:xs[0])]
+endfunction
+
+function! s:sin_backward(gys) dict abort
+  let l:x = self.inputs[0]
+  return [s:mul(a:gys[0], s:cos(l:x))]
+endfunction
+
+
+function! s:cos(x) abort
+  return s:Function('s:cos').call(a:x)
+endfunction
+
+function! s:cos_forward(xs) dict abort
+  return [s:elemwise_unary_op({a -> cos(a)}, a:xs[0])]
+endfunction
+
+function! s:cos_backward(gys) dict abort
+  let l:x = self.inputs[0]
+  return [s:mul(a:gys[0], s:sin(l:x).n())]
+endfunction
+
+
 function! s:_sum(x) abort
   let l:total = 0
   for l:e in a:x.data
@@ -741,12 +784,28 @@ function! autograd#log(x) abort
   return s:log(a:x)
 endfunction
 
+function! autograd#exp(x) abort
+  return s:exp(a:x)
+endfunction
+
+function! autograd#sin(x) abort
+  return s:sin(a:x)
+endfunction
+
+function! autograd#cos(x) abort
+  return s:cos(a:x)
+endfunction
+
 function! autograd#sum(x) abort
   return s:sum(a:x)
 endfunction
 
 function! autograd#broadcast_to(x, shape) abort
   return s:broadcast_to(a:x, a:shape)
+endfunction
+
+function! autograd#pi() abort
+  return acos(-1.0)
 endfunction
 
 " Utilities
