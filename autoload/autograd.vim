@@ -134,6 +134,10 @@ function! s:Tensor.n() abort
   return s:mul(self, -1)
 endfunction
 
+function! s:Tensor.T() abort
+  return s:transpose(self)
+endfunction
+
 function! s:Tensor.clone() abort
   return s:Tensor(self.data, self.shape, self.size)
 endfunction
@@ -571,6 +575,141 @@ function! s:sum_to_backward(gys) dict abort
 endfunction
 
 
+function! s:_transpose(x) abort
+  let l:dim = len(a:x.shape)
+  if l:dim > 2
+    call s:error('transpose() is supported only for 1D-tensor and 2D-tensor.')
+  endif
+
+  if l:dim == 1
+    return a:x
+  endif
+
+  let l:xd = a:x.data
+
+  let l:out_data = s:vector(a:x.size)
+
+  let l:n_i = a:x.shape[0]
+  let l:n_j = a:x.shape[1]
+
+  let l:n_j_range = range(l:n_j)
+  for l:i in range(l:n_i)
+    let l:buf = l:i * l:n_j
+    for l:j in l:n_j_range
+      let l:out_data[l:j * l:n_i + l:i] = l:xd[l:buf + l:j]
+    endfor
+  endfor
+
+  return s:Tensor(l:out_data, [l:n_j, l:n_i], a:x.size)
+endfunction
+
+
+function! s:transpose(x) abort
+  return s:Function('s:transpose').apply(a:x)
+endfunction
+
+function! s:transpose_forward(xs) dict abort
+  return [s:_transpose(a:xs[0])]
+endfunction
+
+function! s:transpose_backward(gys) dict abort
+  return [s:transpose(a:gys[0])]
+endfunction
+
+
+function! s:_matmul(x0, x1) abort
+
+  return l:out
+endfunction
+
+function! s:matmul(a, b) abort
+  return s:Function('s:matmul').apply(a:a, a:b)
+endfunction
+
+function! s:matmul_forward(xs) dict abort
+  let l:x0 = a:xs[0]
+  let l:x1 = a:xs[1]
+
+  let l:x0_dim = len(l:x0.shape)
+  let l:x1_dim = len(l:x1.shape)
+
+  if l:x0_dim > 2 || l:x1_dim > 2
+    call s:error('inputs must be 2D-2D or 1D-1D.')
+    return
+  endif
+
+  let l:x0_shape = copy(l:x0.shape)
+  let l:x1_shape = copy(l:x1.shape)
+  let self['x0_shape_fix'] = l:x0_shape
+  let self['x1_shape_fix'] = l:x1_shape
+
+  " 1D-tensor is converted to 2D-tensor
+  if l:x0_dim == 1
+    call insert(l:x0_shape, 1, 0)
+  endif
+  if l:x1_dim == 1
+    call add(l:x1_shape, 1)
+  endif
+
+  if l:x0_shape[1] != l:x1_shape[0]
+    call s:error('axis 1 of left operand mismatchs axis 0 of right.')
+  endif
+
+  let l:n_i = l:x0_shape[0]
+  let l:n_k = l:x0_shape[1]
+  let l:n_j = l:x1_shape[1]
+
+  let l:out = s:zeros([l:n_i, l:n_j])
+
+  let l:od = l:out.data
+  let l:d0 = l:x0.data
+  let l:d1 = l:x1.data
+
+  " 2D matrix product (ikj-algorithm)
+  let l:n_k_range = range(l:n_k)
+  let l:n_j_range = range(l:n_j)
+  for l:i in range(l:n_i)
+    for l:k in l:n_k_range
+      let l:buf = l:d0[l:i * l:n_k + l:k]
+      for l:j in l:n_j_range
+        let l:od[l:i * l:n_j + l:j] += l:buf * l:d1[l:k * l:n_j + l:j]
+      endfor
+    endfor
+  endfor
+
+  " If one is 1D, output in 1D
+  if l:x0_dim == 1
+    call remove(l:out.shape, 0)
+  elseif l:x1_dim == 1
+    call remove(l:out.shape, 1)
+  endif
+
+  return [l:out]
+endfunction
+
+function! s:matmul_backward(gys) dict abort
+  let l:x0 = self.inputs[0]
+  let l:x1 = self.inputs[1]
+  let l:gy = a:gys[0]
+
+  let l:x0_shape_raw = l:x0.shape
+  let l:x1_shape_raw = l:x1.shape
+
+  " temporarily restores the shape of x when y is calculated.
+  let l:x0.shape = self.x0_shape_fix
+  let l:x1.shape = self.x1_shape_fix
+
+  let l:gx0 = s:matmul(l:gy, l:x1.T())
+  let l:gx1 = s:matmul(l:x0.T(), l:gy)
+
+  " return to the original shape
+  let l:x0.shape = l:x0_shape_raw
+  let l:x1.shape = l:x1_shape_raw
+
+  return [l:gx0, l:gx1]
+endfunction
+
+
 " it returns random value from 0.0 to 1.0.
 function! s:rand()
   return rand() / 4294967295.0
@@ -862,6 +1001,14 @@ endfunction
 
 function! autograd#broadcast_to(x, shape) abort
   return s:broadcast_to(a:x, a:shape)
+endfunction
+
+function! autograd#transpose(x) abort
+  return s:transpose(a:x)
+endfunction
+
+function! autograd#matmul(a, b) abort
+  return s:matmul(a:a, a:b)
 endfunction
 
 function! autograd#pi() abort
