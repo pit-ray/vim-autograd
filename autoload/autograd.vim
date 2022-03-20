@@ -176,12 +176,28 @@ function! s:as_tensor(data) abort
   return s:is_tensor(a:data) ? a:data : s:tensor(a:data)
 endfunction
 
+function! s:zeros(shape) abort
+  let l:size = s:shape_to_size(a:shape)
+  if l:size == 0
+    call s:error('axis without element is invalid.')
+  endif
+  return s:Tensor(s:vector(l:size, 0.0), a:shape, l:size)
+endfunction
+
 function! s:zeros_like(tensor) abort
   return s:Tensor(
     \ s:vector(a:tensor.size, 0.0),
     \ a:tensor.shape,
     \ a:tensor.size
     \ )
+endfunction
+
+function! s:ones(shape) abort
+  let l:size = s:shape_to_size(a:shape)
+  if l:size == 0
+    call s:error('axis without element is invalid.')
+  endif
+  return s:Tensor(s:vector(l:size, 1.0), a:shape, l:size)
 endfunction
 
 function! s:ones_like(tensor) abort
@@ -389,6 +405,13 @@ function! s:log_backward(gys) dict abort
   return [s:div(a:gys[0], l:x)]
 endfunction
 
+function! s:_sum(x) abort
+  let l:total = 0
+  for l:e in a:x.data
+    let l:total += l:e
+  endfor
+  return l:total
+endfunction
 
 function! s:sum(x) abort
   return s:Function('s:sum').call(a:x)
@@ -396,13 +419,8 @@ endfunction
 
 function! s:sum_forward(xs) dict abort
   let self['x_shape'] = a:xs[0].shape
-
-  let l:total = 0
-  for l:e in a:xs[0].data
-    let l:total += l:e
-  endfor
-
-  return [s:Tensor(l:total, [1], 1)]
+  let l:s = s:_sum(a:xs[0])
+  return [s:Tensor(l:s, [1], 1)]
 endfunction
 
 function! s:sum_backward(gys) dict abort
@@ -451,12 +469,17 @@ function! s:sum_to(x, shape) abort
     call s:error('matrix sum_to is not supported yet.')
   endif
 
-  let l:fn = s:Function('s:sum_to')
-  let l:fn.forward = function('s:sum_forward')
-  let l:fn.backward = function('s:sum_backward')
+  return s:Function('s:sum_to').call(a:x)
+endfunction
 
-  " let l:fn['shape'] = a:shape
-  return l:fn.call(a:x)
+function! s:sum_to_forward(xs) dict abort
+  let self['x_shape'] = a:xs[0].shape
+  let l:s = s:_sum(a:xs[0])
+  return [s:Tensor(l:s, [1], 1)]
+endfunction
+
+function! s:sum_to_backward(gys) dict abort
+  return [s:broadcast_to(a:gys[0], self.x_shape)]
 endfunction
 
 
@@ -668,8 +691,16 @@ function! autograd#as_tensor(data) abort
   return s:as_tensor(a:data)
 endfunction
 
+function! autograd#zeros(shape) abort
+  return s:zeros(a:shape)
+endfunction
+
 function! autograd#zeros_like(tensor) abort
   return s:zeros_like(a:tensor)
+endfunction
+
+function! autograd#ones(shape) abort
+  return s:ones(a:shape)
 endfunction
 
 function! autograd#ones_like(tensor) abort

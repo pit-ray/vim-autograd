@@ -44,22 +44,10 @@ function! s:test_pow() abort
 endfunction
 
 
-function! s:test_generation() abort
-  let x = autograd#tensor(2.0)
-
-  let y = autograd#add(x.p(2).p(2), x.p(2).p(2))
-  call y.backward()
-
-  call assert_equal([32.0], y.data)
-  call assert_equal([64.0], x.grad.data)
-endfunction
-
-
 function! test_basic#run_test_suite() abort
   call s:test_add()
   call s:test_mul()
   call s:test_sub()
   call s:test_div()
   call s:test_pow()
-  call s:test_generation()
 endfunction

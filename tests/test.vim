@@ -13,9 +13,10 @@ let s:test_result_file = 'test_result.log'
 
 let s:test_suites = [
   \ 'test_basic',
-  \ 'test_math',
   \ 'test_complex',
   \ 'test_higher_order',
+  \ 'test_math',
+  \ 'test_tensor',
   \ 'test_util'
   \ ]
 
