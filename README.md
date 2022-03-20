@@ -11,8 +11,8 @@ It is based on [DeZero](https://github.com/oreilly-japan/deep-learning-from-scra
 ## ToDo
 - [x] support basic operations.
 - [x] support higher-order differentiation.
-- [ ] support for basic mathematical functions (e.g. sin(), cos()) supported by Vim.
-- [ ] support matrix.
+- [x] support for basic mathematical functions (e.g. sin(), cos()) supported by Vim.
+- [x] support matrix.
 - [ ] add documentation.
 
 ## Usage
