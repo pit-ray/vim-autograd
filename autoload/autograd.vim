@@ -41,7 +41,8 @@ function! s:comp_tensor_gen(lhs, rhs) abort
 endfunction
 
 function! s:Tensor.backward(...) abort
-  let l:retain_fnout_grad = get(a:, 1, 0)
+  let l:create_graph = get(a:, 1, 0)
+  let l:retain_fnout_grad = get(a:, 2, 0)
 
   if empty(self.grad)
     let self.grad = s:ones_like(self)
@@ -60,6 +61,13 @@ function! s:Tensor.backward(...) abort
     for l:output in l:func.outputs
       call add(l:gys, l:output.grad)
     endfor
+
+    " If create_graph is false, does not create graph in the following range.
+    " ---------------------------------------------
+    if !l:create_graph
+      call s:nograd_begin()
+    endif
+
     let l:gxs = l:func.backward(l:gys)
 
     let l:input_grad_ids = []
@@ -94,6 +102,11 @@ function! s:Tensor.backward(...) abort
         endif
       endfor
     endif
+
+    if !l:create_graph
+      call s:nograd_end()
+    endif
+    " ---------------------------------------------
   endwhile
 endfunction
 
@@ -514,6 +527,16 @@ endfunction
 
 
 " Utilities
+let s:nograd_state_cache = s:enable_backprop
+function! s:nograd_begin() abort
+  let s:nograd_state_cache = s:enable_backprop
+  let s:enable_backprop = 0
+endfunction
+
+function! s:nograd_end() abort
+  let s:enable_backprop = s:nograd_state_cache
+endfunction
+
 function! s:isclose(a, b, ...) abort
   let l:rtol = get(a:, 1, 0.00001)
   let l:atol = get(a:, 2, 0.00000001)
@@ -697,11 +720,11 @@ endfunction
 
 " Utilities
 function! autograd#nograd_begin() abort
-  let s:enable_backprop = 0
+  return s:nograd_begin()
 endfunction
 
 function! autograd#nograd_end() abort
-  let s:enable_backprop = 1
+  return s:nograd_end()
 endfunction
 
 function! autograd#numerical_grad(f, x) abort

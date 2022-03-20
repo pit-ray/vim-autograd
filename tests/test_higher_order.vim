@@ -6,27 +6,27 @@ function! s:test_higer_order_differential() abort
   let y = x.p(5).s(x.p(3).m(3)).a(1)
   call assert_equal([9.0], y.data)
 
-  call y.backward()
+  call y.backward(1)
   call assert_equal([44.0], x.grad.data)
 
   let gx = x.grad
   call x.zero_grad()
-  call gx.backward()
+  call gx.backward(1)
   call assert_equal([124.0], x.grad.data)
 
   let gx = x.grad
   call x.zero_grad()
-  call gx.backward()
+  call gx.backward(1)
   call assert_equal([222.0], x.grad.data)
 
   let gx = x.grad
   call x.zero_grad()
-  call gx.backward()
+  call gx.backward(1)
   call assert_equal([240.0], x.grad.data)
 
   let gx = x.grad
   call x.zero_grad()
-  call gx.backward()
+  call gx.backward(1)
   call assert_equal([120.0], x.grad.data)
 endfunction
 
