@@ -220,7 +220,7 @@ let s:Function = {
   \ 'backward': v:null
   \ }
 
-function! s:Function.call(...) abort
+function! s:Function.apply(...) abort
   let l:inputs = []
   for l:input in a:000
     call add(l:inputs, s:as_tensor(l:input))
@@ -266,11 +266,11 @@ function! s:_add(x0, x1) abort
 endfunction
 
 function! s:add(x0, x1) abort
-  return s:Function('s:add').call(a:x0, a:x1)
+  return s:Function('s:add').apply(a:x0, a:x1)
 endfunction
 
 function! s:add_forward(xs) dict abort
-  return [s:elemwise_binary_op(function('s:_add'), a:xs[0], a:xs[1])]
+  return [s:elementwise(function('s:_add'), a:xs)]
 endfunction
 
 function! s:add_backward(gys) dict abort
@@ -292,11 +292,11 @@ function! s:_mul(x0, x1) abort
 endfunction
 
 function! s:mul(x0, x1) abort
-  return s:Function('s:mul').call(a:x0, a:x1)
+  return s:Function('s:mul').apply(a:x0, a:x1)
 endfunction
 
 function! s:mul_forward(xs) dict abort
-  return [s:elemwise_binary_op(function('s:_mul'), a:xs[0], a:xs[1])]
+  return [s:elementwise(function('s:_mul'), a:xs)]
 endfunction
 
 function! s:mul_backward(gys) dict abort
@@ -318,11 +318,11 @@ function! s:_sub(x0, x1) abort
 endfunction
 
 function! s:sub(x0, x1) abort
-  return s:Function('s:sub').call(a:x0, a:x1)
+  return s:Function('s:sub').apply(a:x0, a:x1)
 endfunction
 
 function! s:sub_forward(xs) dict abort
-  return [s:elemwise_binary_op(function('s:_sub'), a:xs[0], a:xs[1])]
+  return [s:elementwise(function('s:_sub'), a:xs)]
 endfunction
 
 function! s:sub_backward(gys) dict abort
@@ -344,11 +344,11 @@ function! s:_div(x0, x1) abort
 endfunction
 
 function! s:div(x0, x1) abort
-  return s:Function('s:div').call(a:x0, a:x1)
+  return s:Function('s:div').apply(a:x0, a:x1)
 endfunction
 
 function! s:div_forward(xs) dict abort
-  return [s:elemwise_binary_op(function('s:_div'), a:xs[0], a:xs[1])]
+  return [s:elementwise(function('s:_div'), a:xs)]
 endfunction
 
 function! s:div_backward(gys) dict abort
@@ -367,11 +367,11 @@ function! s:div_backward(gys) dict abort
 endfunction
 
 function! s:pow(x, c) abort
-  return s:Function('s:pow').call(a:x, a:c)
+  return s:Function('s:pow').apply(a:x, a:c)
 endfunction
 
 function! s:pow_forward(xs) dict abort
-  return [s:elemwise_binary_op({a, b ->pow(a, b)}, a:xs[0], a:xs[1])]
+  return [s:elementwise({a, b ->pow(a, b)}, a:xs)]
 endfunction
 
 function! s:pow_backward(gys) dict abort
@@ -393,11 +393,11 @@ endfunction
 
 
 function! s:log(x) abort
-  return s:Function('s:log').call(a:x)
+  return s:Function('s:log').apply(a:x)
 endfunction
 
 function! s:log_forward(xs) dict abort
-  return [s:elemwise_unary_op({a -> log(a)}, a:xs[0])]
+  return [s:elementwise({a -> log(a)}, a:xs)]
 endfunction
 
 function! s:log_backward(gys) dict abort
@@ -407,11 +407,11 @@ endfunction
 
 
 function! s:exp(x) abort
-  return s:Function('s:exp').call(a:x)
+  return s:Function('s:exp').apply(a:x)
 endfunction
 
 function! s:exp_forward(xs) dict abort
-  return [s:elemwise_unary_op({a -> exp(a)}, a:xs[0])]
+  return [s:elementwise({a -> exp(a)}, a:xs)]
 endfunction
 
 function! s:exp_backward(gys) dict abort
@@ -421,11 +421,11 @@ endfunction
 
 
 function! s:sin(x) abort
-  return s:Function('s:sin').call(a:x)
+  return s:Function('s:sin').apply(a:x)
 endfunction
 
 function! s:sin_forward(xs) dict abort
-  return [s:elemwise_unary_op({a -> sin(a)}, a:xs[0])]
+  return [s:elementwise({a -> sin(a)}, a:xs)]
 endfunction
 
 function! s:sin_backward(gys) dict abort
@@ -435,11 +435,11 @@ endfunction
 
 
 function! s:cos(x) abort
-  return s:Function('s:cos').call(a:x)
+  return s:Function('s:cos').apply(a:x)
 endfunction
 
 function! s:cos_forward(xs) dict abort
-  return [s:elemwise_unary_op({a -> cos(a)}, a:xs[0])]
+  return [s:elementwise({a -> cos(a)}, a:xs)]
 endfunction
 
 function! s:cos_backward(gys) dict abort
@@ -449,11 +449,11 @@ endfunction
 
 
 function! s:tanh(x) abort
-  return s:Function('s:tanh').call(a:x)
+  return s:Function('s:tanh').apply(a:x)
 endfunction
 
 function! s:tanh_forward(xs) dict abort
-  return [s:elemwise_unary_op({a -> tanh(a)}, a:xs[0])]
+  return [s:elementwise({a -> tanh(a)}, a:xs)]
 endfunction
 
 function! s:tanh_backward(gys) dict abort
@@ -471,7 +471,7 @@ function! s:_sum(x) abort
 endfunction
 
 function! s:sum(x) abort
-  return s:Function('s:sum').call(a:x)
+  return s:Function('s:sum').apply(a:x)
 endfunction
 
 function! s:sum_forward(xs) dict abort
@@ -493,7 +493,7 @@ function! s:broadcast_to(x, shape) abort
 
   let l:fn = s:Function('s:broadcast_to')
   let l:fn['shape'] = a:shape
-  return l:fn.call(a:x)
+  return l:fn.apply(a:x)
 endfunction
 
 function! s:broadcast_to_forward(xs) dict abort
@@ -526,7 +526,7 @@ function! s:sum_to(x, shape) abort
     call s:error('matrix sum_to is not supported yet.')
   endif
 
-  return s:Function('s:sum_to').call(a:x)
+  return s:Function('s:sum_to').apply(a:x)
 endfunction
 
 function! s:sum_to_forward(xs) dict abort
@@ -569,38 +569,41 @@ function! s:get_matrix_shape(array) abort
   return l:shape
 endfunction
 
-function! s:elemwise_unary_op(func, x) abort
-  let l:tensor = s:zeros_like(a:x)
-  for l:i in range(a:x.size)
-    let l:tensor.data[l:i] = a:func(a:x.data[l:i])
-  endfor
-  return l:tensor
-endfunction
+function! s:elementwise(func, inputs) abort
+  if len(a:inputs) == 1
+    let l:x = a:inputs[0]
+    let l:tensor = s:zeros_like(l:x)
+    for l:i in range(l:x.size)
+      let l:tensor.data[l:i] = a:func(l:x.data[l:i])
+    endfor
+    return l:tensor
+  endif
 
-function! s:elemwise_binary_op(func, x0, x1) abort
-  let l:tensor = s:zeros_like(a:x0.size > a:x1.size ? a:x0 : a:x1)
+  let l:x0 = a:inputs[0]
+  let l:x1 = a:inputs[1]
+  let l:tensor = s:zeros_like(l:x0.size > l:x1.size ? l:x0 : l:x1)
 
   " If at least one of them is scalar, it broadcast.
-  if a:x0.size == 1 || a:x1.size == 1
-    if a:x0.size == l:tensor.size
+  if l:x0.size == 1 || l:x1.size == 1
+    if l:x0.size == l:tensor.size
       for l:i in range(l:tensor.size)
-        let l:tensor.data[l:i] = a:func(a:x0.data[l:i], a:x1.data[0])
+        let l:tensor.data[l:i] = a:func(l:x0.data[l:i], l:x1.data[0])
       endfor
     else
       for l:i in range(l:tensor.size)
-        let l:tensor.data[l:i] = a:func(a:x0.data[0], a:x1.data[l:i])
+        let l:tensor.data[l:i] = a:func(l:x0.data[0], l:x1.data[l:i])
       endfor
     endif
     return l:tensor
   endif
 
-  if a:x0.shape != a:x1.shape
+  if l:x0.shape != l:x1.shape
     call s:error('matrix broadcast is not supported yet.')
     return l:tensor
   endif
 
   for l:i in range(l:tensor.size)
-    let l:tensor.data[l:i] = a:func(a:x0.data[l:i], a:x1.data[l:i])
+    let l:tensor.data[l:i] = a:func(l:x0.data[l:i], l:x1.data[l:i])
   endfor
   return l:tensor
 endfunction
@@ -627,7 +630,7 @@ function! s:allclose(a, b, ...) abort
   let l:rtol = get(a:, 1, 0.00001)
   let l:atol = get(a:, 2, 0.00000001)
 
-  let l:results = s:elemwise_binary_op(function('s:isclose'), a:a, a:b)
+  let l:results = s:elementwise(function('s:isclose'), [a:a, a:b])
   return min(l:results.data) == 1
 endfunction
 
@@ -635,14 +638,14 @@ function! s:numerical_grad(f, x) abort
   let l:eps = s:tensor(0.000001)
   let l:dx = s:tensor(l:eps.data[0] * 2)
 
-  let l:x0 = s:elemwise_binary_op(function('s:_sub'), a:x, l:eps)
-  let l:x1 = s:elemwise_binary_op(function('s:_add'), a:x, l:eps)
+  let l:x0 = s:elementwise(function('s:_sub'), [a:x, l:eps])
+  let l:x1 = s:elementwise(function('s:_add'), [a:x, l:eps])
 
-  let l:y0 = s:elemwise_unary_op(a:f, l:x0)
-  let l:y1 = s:elemwise_unary_op(a:f, l:x1)
+  let l:y0 = s:elementwise(a:f, [l:x0])
+  let l:y1 = s:elementwise(a:f, [l:x1])
 
-  let l:dy = s:elemwise_binary_op(function('s:_sub'), l:y1, l:y0)
-  return s:elemwise_binary_op(function('s:_div'), l:dy, l:dx)
+  let l:dy = s:elementwise(function('s:_sub'), [l:y1, l:y0])
+  return s:elementwise(function('s:_div'), [l:dy, l:dx])
 endfunction
 
 function! s:gradcheck(f, inputs) abort
