@@ -18,12 +18,10 @@ function! s:test_tensor() abort
   let a = autograd#tensor([[1, 2, 3], [4, 5, 6]])
   call assert_equal([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], a.data)
   call assert_equal([2, 3], a.shape)
-  call assert_equal(6, a.size)
 
   let b = autograd#tensor(5)
   call assert_equal([5.0], b.data)
   call assert_equal([1], b.shape)
-  call assert_equal(1, b.size)
 endfunction
 
 function! s:test_as_tensor() abort
@@ -36,13 +34,11 @@ function! s:test_as_tensor() abort
   let br = autograd#as_tensor(b)
   call assert_equal([5.0, 6.0, 7.0], br.data)
   call assert_equal([3], br.shape)
-  call assert_equal(3, br.size)
 
   let c = 5
   let cr = autograd#as_tensor(c)
   call assert_equal([5.0], cr.data)
   call assert_equal([1], cr.shape)
-  call assert_equal(1, cr.size)
 endfunction
 
 function! s:test_zeros() abort
@@ -52,8 +48,7 @@ function! s:test_zeros() abort
 
   let x = autograd#zeros([d1, d2, d3])
   call assert_equal([d1, d2, d3], x.shape)
-  call assert_equal(d1 * d2 * d3, x.size)
-  for l:i in range(x.size)
+  for l:i in range(len(x.data))
     call assert_equal(0.0, x.data[l:i])
   endfor
 endfunction
@@ -69,8 +64,7 @@ function! s:test_zeros_like() abort
   let b = autograd#zeros_like(a)
   call assert_notequal(a.id, b.id)
   call assert_equal(a.shape, b.shape)
-  call assert_equal(a.size, b.size)
-  for l:i in range(b.size)
+  for l:i in range(len(b.data))
     call assert_equal(0.0, b.data[l:i])
   endfor
 endfunction
@@ -82,8 +76,7 @@ function! s:test_ones() abort
 
   let x = autograd#ones([d1, d2, d3])
   call assert_equal([d1, d2, d3], x.shape)
-  call assert_equal(d1 * d2 * d3, x.size)
-  for l:i in range(x.size)
+  for l:i in range(len(x.data))
     call assert_equal(1.0, x.data[l:i])
   endfor
 endfunction
@@ -99,8 +92,7 @@ function! s:test_ones_like() abort
   let b = autograd#ones_like(a)
   call assert_notequal(a.id, b.id)
   call assert_equal(a.shape, b.shape)
-  call assert_equal(a.size, b.size)
-  for l:i in range(b.size)
+  for l:i in range(len(b.data))
     call assert_equal(1.0, b.data[l:i])
   endfor
 endfunction

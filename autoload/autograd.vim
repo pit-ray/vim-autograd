@@ -20,7 +20,6 @@ let s:Tensor = {
   \ 'parent_fn': {},
   \ 'gen': 0,
   \ 'shape': [],
-  \ 'size': 0
   \ }
 
 function! s:Tensor.cleargrad() abort
@@ -47,7 +46,7 @@ function! s:Tensor.backward(...) abort
   let l:retain_outgrad = get(a:, 2, 0)
 
   if empty(self.grad)
-    let self.grad = s:ones_like(self)
+    let self.grad = autograd#ones_like(self)
   endif
 
   if empty(self.parent_fn)
@@ -67,7 +66,7 @@ function! s:Tensor.backward(...) abort
     " If create_graph is false, does not create graph in the following range.
     " ---------------------------------------------
     if !l:create_graph
-      call s:nograd_begin()
+      let l:ng = autograd#no_grad()
     endif
 
     let l:gxs = l:func.backward(l:gys)
@@ -106,7 +105,7 @@ function! s:Tensor.backward(...) abort
     endif
 
     if !l:create_graph
-      call s:nograd_end()
+      call l:ng.end()
     endif
     " ---------------------------------------------
   endwhile
@@ -140,22 +139,26 @@ function! s:Tensor.T() abort
   return s:transpose(self)
 endfunction
 
+function! s:Tensor.reshape(...) abort
+  let l:shape = (a:0 == 1 && type(a:1) == v:t_list) ? a:1 : a:000
+  return s:reshape(self, l:shape)
+endfunction
+
 function! s:Tensor.clone() abort
-  return s:Tensor(copy(self.data), copy(self.shape), self.size)
+  return s:Tensor(copy(self.data), copy(self.shape))
 endfunction
 
 " It returns a new tensor detached from the current graph.
 " However, returned tensor shares the same data and shape attribute.
 function! s:Tensor.detach() abort
-  return s:Tensor(self.data, self.shape, self.size)
+  return s:Tensor(self.data, self.shape)
 endfunction
 
-function! s:Tensor(data, shape, size) abort
+function! s:Tensor(data, shape) abort
   let l:tensor = deepcopy(s:Tensor)
 
   let l:tensor.data = a:data
   let l:tensor.shape = a:shape
-  let l:tensor.size = a:size
 
   let l:tensor.id = s:last_tensor_id + 1
   let s:last_tensor_id = l:tensor.id
@@ -169,55 +172,118 @@ function! s:is_tensor(x) abort
   return has_key(a:x, 'data') && has_key(a:x, 'grad')
 endfunction
 
-function! s:tensor(data) abort
+function! s:vector(size, ...) abort
+  let l:init_val = get(a:, 1, 0.0)
+  let l:v = repeat([0.0], a:size)
+  return l:init_val != 0.0 ? map(l:v, l:init_val) : l:v
+endfunction
+
+function! s:shape_to_size(shape) abort
+  let l:size = 1
+  for l:x in a:shape
+    let l:size *= l:x
+  endfor
+  return l:size
+endfunction
+
+function! s:get_matrix_shape(array) abort
+  let l:shape = []
+  let l:sub_array = a:array
+  while type(l:sub_array) == v:t_list
+    call add(l:shape, len(l:sub_array))
+    let l:sub_array = l:sub_array[0]
+  endwhile
+  return l:shape
+endfunction
+
+function! autograd#tensor(data) abort
   let l:data = type(a:data) != v:t_list ? [a:data] : a:data
 
   let l:shape = s:get_matrix_shape(l:data)
-  let l:size = s:shape_to_size(l:shape)
   let l:data = flatten(l:data)
 
   call map(l:data, 'v:val * 1.0')  " int to float
 
-  if len(l:data) != l:size
+  if len(l:data) != s:shape_to_size(l:shape)
     call s:error('Invalid matrix shape.')
   endif
-  return s:Tensor(l:data, l:shape, l:size)
+  return s:Tensor(l:data, l:shape)
 endfunction
 
-function! s:as_tensor(data) abort
-  return s:is_tensor(a:data) ? a:data : s:tensor(a:data)
+function! autograd#as_tensor(data) abort
+  return s:is_tensor(a:data) ? a:data : autograd#tensor(a:data)
 endfunction
 
-function! s:zeros(shape) abort
+function! autograd#zeros(shape) abort
   let l:size = s:shape_to_size(a:shape)
   if l:size == 0
     call s:error('axis without element is invalid.')
   endif
-  return s:Tensor(s:vector(l:size, 0.0), a:shape, l:size)
+  return s:Tensor(s:vector(l:size, 0.0), a:shape)
 endfunction
 
-function! s:zeros_like(tensor) abort
-  return s:Tensor(
-    \ s:vector(a:tensor.size, 0.0),
-    \ a:tensor.shape,
-    \ a:tensor.size
-    \ )
+function! autograd#zeros_like(tensor) abort
+  return s:Tensor(s:vector(len(a:tensor.data), 0.0), a:tensor.shape)
 endfunction
 
-function! s:ones(shape) abort
+function! autograd#ones(shape) abort
   let l:size = s:shape_to_size(a:shape)
   if l:size == 0
     call s:error('axis without element is invalid.')
   endif
-  return s:Tensor(s:vector(l:size, 1.0), a:shape, l:size)
+  return s:Tensor(s:vector(l:size, 1.0), a:shape)
 endfunction
 
-function! s:ones_like(tensor) abort
-  return s:Tensor(
-    \ s:vector(a:tensor.size, 1.0),
-    \ a:tensor.shape,
-    \ a:tensor.size
-    \ )
+function! autograd#ones_like(tensor) abort
+  return s:Tensor(s:vector(len(a:tensor.data), 1.0), a:tensor.shape)
+endfunction
+
+
+function! s:random_sample()
+  " it returns random value from 0.0 to 1.0.
+  return rand() / 4294967295.0
+endfunction
+
+function! s:box_muller(u1, u2) abort
+  return sqrt(-2 * log(a:u1)) * cos(2 * s:pi * a:u2)
+endfunction
+
+function! autograd#rand(...) abort
+  let l:shape = a:0 > 0 ? a:000 : [1]
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(repeat([0.0], l:size), 's:random_sample()')
+  return s:Tensor(l:data, l:shape)
+endfunction
+
+function! autograd#uniform(...) abort
+  let l:low = get(a:, 1, 0.0) * 1.0
+  let l:high = get(a:, 2, 1.0) * 1.0
+  let l:shape = get(a:, 3, [1])
+
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(
+    \ repeat([0.0], l:size),
+    \ 'l:low + (l:high - l:low) * s:random_sample()')
+  return s:Tensor(l:data, l:shape)
+endfunction
+
+function! autograd#randn(...) abort
+  let l:shape = a:0 > 0 ? a:000 : [1]
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(
+    \ repeat([0.0], l:size),
+    \ 's:box_muller(s:random_sample(), s:random_sample())')
+  return s:Tensor(l:data, l:shape)
+endfunction
+
+function! autograd#normal(mean, std, ...) abort
+  let l:shape = get(a:, 1, [1])
+
+  let l:size = s:shape_to_size(l:shape)
+  let l:data = map(
+    \ repeat([0.0], l:size),
+    \ 'a:std * s:box_muller(s:random_sample(), s:random_sample()) + a:mean')
+  return s:Tensor(l:data, l:shape)
 endfunction
 
 
@@ -235,7 +301,7 @@ let s:Function = {
 function! s:Function.apply(...) abort
   let l:inputs = []
   for l:input in a:000
-    call add(l:inputs, s:as_tensor(l:input))
+    call add(l:inputs, autograd#as_tensor(l:input))
   endfor
 
   let l:outputs = self.forward(l:inputs)
@@ -258,7 +324,7 @@ function! s:Function.apply(...) abort
   return len(l:outputs) > 1 ? l:outputs : l:outputs[0]
 endfunction
 
-function! s:Function(name) abort
+function! autograd#Function(name) abort
   let l:func = deepcopy(s:Function)
   let l:func.name = a:name
 
@@ -273,16 +339,20 @@ endfunction
 
 
 " Operations
+function! autograd#add(x0, x1) abort
+  return s:add(a:x0, a:x1)
+endfunction
+
 function! s:_add(x0, x1) abort
   return a:x0 + a:x1
 endfunction
 
 function! s:add(x0, x1) abort
-  return s:Function('s:add').apply(a:x0, a:x1)
+  return autograd#Function('s:add').apply(a:x0, a:x1)
 endfunction
 
 function! s:add_forward(xs) dict abort
-  return [s:elementwise(function('s:_add'), a:xs)]
+  return [autograd#elementwise(function('s:_add'), a:xs)]
 endfunction
 
 function! s:add_backward(gys) dict abort
@@ -299,16 +369,20 @@ function! s:add_backward(gys) dict abort
 endfunction
 
 
+function! autograd#mul(x0, x1) abort
+  return s:mul(a:x0, a:x1)
+endfunction
+
 function! s:_mul(x0, x1) abort
   return a:x0 * a:x1
 endfunction
 
 function! s:mul(x0, x1) abort
-  return s:Function('s:mul').apply(a:x0, a:x1)
+  return autograd#Function('s:mul').apply(a:x0, a:x1)
 endfunction
 
 function! s:mul_forward(xs) dict abort
-  return [s:elementwise(function('s:_mul'), a:xs)]
+  return [autograd#elementwise(function('s:_mul'), a:xs)]
 endfunction
 
 function! s:mul_backward(gys) dict abort
@@ -325,16 +399,20 @@ function! s:mul_backward(gys) dict abort
 endfunction
 
 
+function! autograd#sub(x0, x1) abort
+  return s:sub(a:x0, a:x1)
+endfunction
+
 function! s:_sub(x0, x1) abort
   return a:x0 - a:x1
 endfunction
 
 function! s:sub(x0, x1) abort
-  return s:Function('s:sub').apply(a:x0, a:x1)
+  return autograd#Function('s:sub').apply(a:x0, a:x1)
 endfunction
 
 function! s:sub_forward(xs) dict abort
-  return [s:elementwise(function('s:_sub'), a:xs)]
+  return [autograd#elementwise(function('s:_sub'), a:xs)]
 endfunction
 
 function! s:sub_backward(gys) dict abort
@@ -351,16 +429,20 @@ function! s:sub_backward(gys) dict abort
 endfunction
 
 
+function! autograd#div(x0, x1) abort
+  return s:div(a:x0, a:x1)
+endfunction
+
 function! s:_div(x0, x1) abort
   return a:x0 / a:x1
 endfunction
 
 function! s:div(x0, x1) abort
-  return s:Function('s:div').apply(a:x0, a:x1)
+  return autograd#Function('s:div').apply(a:x0, a:x1)
 endfunction
 
 function! s:div_forward(xs) dict abort
-  return [s:elementwise(function('s:_div'), a:xs)]
+  return [autograd#elementwise(function('s:_div'), a:xs)]
 endfunction
 
 function! s:div_backward(gys) dict abort
@@ -378,12 +460,17 @@ function! s:div_backward(gys) dict abort
   return [s:sum_to(l:gx0, l:x0.shape), s:sum_to(l:gx1, l:x1.shape)]
 endfunction
 
+
+function! autograd#pow(x, c) abort
+  return s:pow(a:x, a:c)
+endfunction
+
 function! s:pow(x, c) abort
-  return s:Function('s:pow').apply(a:x, a:c)
+  return autograd#Function('s:pow').apply(a:x, a:c)
 endfunction
 
 function! s:pow_forward(xs) dict abort
-  return [s:elementwise({a, b ->pow(a, b)}, a:xs)]
+  return [autograd#elementwise({a, b ->pow(a, b)}, a:xs)]
 endfunction
 
 function! s:pow_backward(gys) dict abort
@@ -404,12 +491,16 @@ function! s:pow_backward(gys) dict abort
 endfunction
 
 
+function! autograd#log(x) abort
+  return s:log(a:x)
+endfunction
+
 function! s:log(x) abort
-  return s:Function('s:log').apply(a:x)
+  return autograd#Function('s:log').apply(a:x)
 endfunction
 
 function! s:log_forward(xs) dict abort
-  return [s:elementwise({a -> log(a)}, a:xs)]
+  return [autograd#elementwise({a -> log(a)}, a:xs)]
 endfunction
 
 function! s:log_backward(gys) dict abort
@@ -418,12 +509,16 @@ function! s:log_backward(gys) dict abort
 endfunction
 
 
+function! autograd#exp(x) abort
+  return s:exp(a:x)
+endfunction
+
 function! s:exp(x) abort
-  return s:Function('s:exp').apply(a:x)
+  return autograd#Function('s:exp').apply(a:x)
 endfunction
 
 function! s:exp_forward(xs) dict abort
-  return [s:elementwise({a -> exp(a)}, a:xs)]
+  return [autograd#elementwise({a -> exp(a)}, a:xs)]
 endfunction
 
 function! s:exp_backward(gys) dict abort
@@ -432,12 +527,16 @@ function! s:exp_backward(gys) dict abort
 endfunction
 
 
+function! autograd#sin(x) abort
+  return s:sin(a:x)
+endfunction
+
 function! s:sin(x) abort
-  return s:Function('s:sin').apply(a:x)
+  return autograd#Function('s:sin').apply(a:x)
 endfunction
 
 function! s:sin_forward(xs) dict abort
-  return [s:elementwise({a -> sin(a)}, a:xs)]
+  return [autograd#elementwise({a -> sin(a)}, a:xs)]
 endfunction
 
 function! s:sin_backward(gys) dict abort
@@ -446,12 +545,16 @@ function! s:sin_backward(gys) dict abort
 endfunction
 
 
+function! autograd#cos(x) abort
+  return s:cos(a:x)
+endfunction
+
 function! s:cos(x) abort
-  return s:Function('s:cos').apply(a:x)
+  return autograd#Function('s:cos').apply(a:x)
 endfunction
 
 function! s:cos_forward(xs) dict abort
-  return [s:elementwise({a -> cos(a)}, a:xs)]
+  return [autograd#elementwise({a -> cos(a)}, a:xs)]
 endfunction
 
 function! s:cos_backward(gys) dict abort
@@ -460,12 +563,16 @@ function! s:cos_backward(gys) dict abort
 endfunction
 
 
+function! autograd#tanh(x) abort
+  return s:tanh(a:x)
+endfunction
+
 function! s:tanh(x) abort
-  return s:Function('s:tanh').apply(a:x)
+  return autograd#Function('s:tanh').apply(a:x)
 endfunction
 
 function! s:tanh_forward(xs) dict abort
-  return [s:elementwise({a -> tanh(a)}, a:xs)]
+  return [autograd#elementwise({a -> tanh(a)}, a:xs)]
 endfunction
 
 function! s:tanh_backward(gys) dict abort
@@ -474,12 +581,16 @@ function! s:tanh_backward(gys) dict abort
 endfunction
 
 
+function! autograd#abs(x) abort
+  return s:abs(a:x)
+endfunction
+
 function! s:abs(x) abort
-  return s:Function('s:abs').apply(a:x)
+  return autograd#Function('s:abs').apply(a:x)
 endfunction
 
 function! s:abs_forward(xs) dict abort
-  return [s:elementwise({a -> abs(a)}, a:xs)]
+  return [autograd#elementwise({a -> abs(a)}, a:xs)]
 endfunction
 
 function! s:abs_backward(gys) dict abort
@@ -488,16 +599,20 @@ function! s:abs_backward(gys) dict abort
 endfunction
 
 
+function! autograd#sign(x) abort
+  return s:sign(a:x)
+endfunction
+
 function! s:_sign(x) abort
   return a:x > 0.0 ? 1.0 : (a:x < -1.0 ? -1.0 : 0.0)
 endfunction
 
 function! s:sign(x) abort
-  return s:Function('s:sign').apply(a:x)
+  return autograd#Function('s:sign').apply(a:x)
 endfunction
 
 function! s:sign_forward(xs) dict abort
-  return [s:elementwise(function('s:_sign'), a:xs)]
+  return [autograd#elementwise(function('s:_sign'), a:xs)]
 endfunction
 
 function! s:sign_backward(gys) dict abort
@@ -505,83 +620,243 @@ function! s:sign_backward(gys) dict abort
 endfunction
 
 
-function! s:_sum(x) abort
-  let l:total = 0
-  for l:e in a:x.data
-    let l:total += l:e
+function! s:left_side_sum_to(x, shape) abort
+  let l:y = autograd#zeros(a:shape)
+
+  let l:xd = a:x.data
+  let l:yd = l:y.data
+
+  let l:x_size = len(l:xd)
+  let l:y_size = len(l:yd)
+
+  for l:i in range(l:x_size / l:y_size)
+    let l:start = l:i * l:y_size
+    for l:j in range(l:y_size)
+      let l:yd[l:j] += l:xd[l:start + l:j]
+    endfor
   endfor
-  return l:total
+  return l:y
 endfunction
 
-function! s:sum(x) abort
-  return s:Function('s:sum').apply(a:x)
+function! s:right_side_sum_to(x, shape) abort
+  let l:y = autograd#zeros(a:shape)
+
+  let l:xd = a:x.data
+  let l:yd = l:y.data
+
+  let l:x_size = len(l:xd)
+  let l:y_size = len(l:yd)
+
+  let l:block_size = l:x_size / l:y_size
+  for l:i in range(l:y_size)
+    let l:start = l:block_size * l:i
+    for l:j in range(l:block_size)
+      let l:yd[l:i] += l:xd[l:start + l:j]
+    endfor
+  endfor
+  return l:y
+endfunction
+
+
+function! autograd#sum(x, ...) abort
+  let l:axis = get(a:, 1, [])
+  let l:keepdims = get(a:, 2, 0)
+  return s:sum(a:x, l:axis, l:keepdims)
+endfunction
+
+function! s:sum(x, axis, keepdims)abort
+  let l:axis = type(a:axis) != v:t_list ? [a:axis] : a:axis
+
+  let l:x_dim = len(a:x.shape)
+  call map(l:axis, 'v:val < 0 ? v:val + l:x_dim : v:val')
+  call map(l:axis, 'v:val >= l:x_dim ? l:x_dim - 1 : v:val')
+
+  let l:fn = autograd#Function('s:sum')
+  let l:fn['axis'] = uniq(sort(l:axis))
+  let l:fn['keepdims'] = a:keepdims
+  return l:fn.apply(a:x)
 endfunction
 
 function! s:sum_forward(xs) dict abort
-  let self['x_shape'] = a:xs[0].shape
-  let l:s = s:_sum(a:xs[0])
-  return [s:Tensor(l:s, [1], 1)]
+  let l:x = a:xs[0]
+
+  " all sum (e.g. (2, 3, 4) -> (1))
+  if empty(self.axis) || len(self.axis) == len(l:x.shape)
+    let l:total = 0
+    for l:e in l:x.data
+      let l:total += l:e
+    endfor
+
+    if !self.keepdims
+      return [s:Tensor([l:total], [1])]
+    endif
+    return [s:Tensor([l:total], repeat([1], len(l:x.shape)))]
+  endif
+
+  " left side sum (e.g. (2, 3, 4) -> (3, 4))
+  if self.axis[0] == 0
+    let l:reduced_shape = l:x.shape[len(self.axis):]
+    let l:s = s:left_side_sum_to(l:x, l:reduced_shape)
+
+    if self.keepdims
+      let l:s.shape = repeat([1], len(self.axis)) + l:reduced_shape
+    endif
+    return [l:s]
+  endif
+
+  " right side sum (e.g. (2, 3, 4) -> (2, 3)
+  if self.axis[-1] == (len(l:x.shape) - 1)
+    let l:reduced_shape = l:x.shape[:-len(self.axis) - 1]
+    let l:s = s:right_side_sum_to(l:x, l:reduced_shape)
+
+    if self.keepdims
+      let l:s.shape = l:reduced_shape + repeat([1], len(self.axis))
+    endif
+    return [l:s]
+  endif
+
+  call s:error('intermediate or sparse axis sums are not supported.')
+  return
 endfunction
 
 function! s:sum_backward(gys) dict abort
-  return [s:broadcast_to(a:gys[0], self.x_shape)]
+  return [s:broadcast_to(a:gys[0], self.inputs[0].shape)]
 endfunction
 
 
+" ex) [1, 5, 6, 1, 1, 1] -> [1, 5, 6]
+function! s:left_valid_shape(shape) abort
+  let l:dim = len(a:shape)
+  let l:valid_size = l:dim
+  for l:i in range(-1, -l:dim, -1)
+    if a:shape[l:i] != 1
+      break
+    endif
+    let l:valid_size -= 1
+  endfor
+
+  if l:valid_size == 0
+    return [1]
+  endif
+
+  return a:shape[:l:valid_size - 1]
+endfunction
+
+" ex [1, 1, 1, 6, 7, 1] -> [6, 7, 1]
+function! s:right_valid_shape(shape) abort
+  let l:dim = len(a:shape)
+  let l:valid_size = l:dim
+  for l:i in range(l:dim)
+    if a:shape[l:i] != 1
+      break
+    endif
+    let l:valid_size -= 1
+  endfor
+
+  if l:valid_size == 0
+    return [1]
+  endif
+
+  return a:shape[-l:valid_size:]
+endfunction
+
+
+function! autograd#broadcast_to(x, shape) abort
+  return s:broadcast_to(a:x, a:shape)
+endfunction
+
 function! s:broadcast_to(x, shape) abort
-  let l:xt = s:as_tensor(a:x)
+  let l:xt = autograd#as_tensor(a:x)
   if l:xt.shape == a:shape
     return l:xt
   endif
 
-  let l:fn = s:Function('s:broadcast_to')
+  let l:fn = autograd#Function('s:broadcast_to')
   let l:fn['shape'] = a:shape
   return l:fn.apply(a:x)
 endfunction
 
 function! s:broadcast_to_forward(xs) dict abort
   let l:x = a:xs[0]
+  let l:x_dim = len(l:x.shape)
 
-  " TODO: currently only scalar broadcast are supported.
-  if l:x.size > 1
-    call s:error('matrix broadcast is not supported yet.')
+  if l:x_dim > len(self.shape)
+    call s:error('cannot broadcast from a larger size to a smaller.')
   endif
 
-  let self['x_shape'] = l:x.shape
-
   let l:size = s:shape_to_size(self.shape)
-  return [s:Tensor(s:vector(l:size, l:x.data[0]), self.shape, l:size)]
+
+  " left side broadcast
+  let l:right_subshape = s:right_valid_shape(l:x.shape)
+  if l:right_subshape == [1]
+    return [s:Tensor(repeat(l:x.data, l:size), self.shape)]
+  endif
+  if self.shape[-len(l:right_subshape):] == l:right_subshape
+    let l:repeat = float2nr(l:size / len(l:x.data))
+    return [s:Tensor(repeat(l:x.data, l:repeat), self.shape)]
+  endif
+
+  " right side broadcast
+  let l:left_subshape = s:left_valid_shape(l:x.shape)
+  if self.shape[:len(l:left_subshape) - 1] == l:left_subshape
+    let l:repeat = float2nr(l:size / len(l:x.data))
+    return [s:Tensor(flatten(
+      \ mapnew(l:x.data, 'repeat([v:val], l:repeat)')), self.shape)]
+  endif
+
+  call s:error(
+    \ 'cannot broadcast array of shape ' .
+    \ string(l:x.shape) . ' into ' . string(self.shape))
 endfunction
 
 function! s:broadcast_to_backward(gys) dict abort
-  " assume the input size is 1
-  return [s:sum_to(a:gys[0], self.x_shape)]
+  return [s:sum_to(a:gys[0], self.inputs[0].shape)]
 endfunction
 
 
+function! autograd#sum_to(x, shape) abort
+  return s:sum_to(a:x, a:shape)
+endfunction
+
 function! s:sum_to(x, shape) abort
-  let l:xt = s:as_tensor(a:x)
+  let l:xt = autograd#as_tensor(a:x)
   if l:xt.shape == a:shape
     return l:xt
   endif
-
-  if s:shape_to_size(a:shape) > 1
-    call s:error('matrix sum_to is not supported yet.')
-  endif
-
-  return s:Function('s:sum_to').apply(a:x)
+  let l:fn = autograd#Function('s:sum_to')
+  let l:fn['shape'] = a:shape
+  return l:fn.apply(a:x)
 endfunction
 
 function! s:sum_to_forward(xs) dict abort
-  let self['x_shape'] = a:xs[0].shape
-  let l:s = s:_sum(a:xs[0])
-  return [s:Tensor(l:s, [1], 1)]
+  let l:x = a:xs[0]
+  let l:y = autograd#zeros(self.shape)
+
+  let l:y_dim = len(self.shape)
+
+  " left side sum
+  let l:right_subshape = s:right_valid_shape(self.shape)
+  if l:right_subshape == [1] || l:x.shape[-len(right_subshape):] == l:right_subshape
+    return [s:left_side_sum_to(l:x, self.shape)]
+  endif
+
+  " right side sum
+  let l:left_subshape = s:left_valid_shape(self.shape)
+  if l:x.shape[:len(l:left_subshape) - 1] == l:left_subshape
+    return [s:right_side_sum_to(l:x, self.shape)]
+  endif
+
+  call s:error('cannot sum from ' . string(l:x.shape) . ' into ' . string(self.shape))
 endfunction
 
 function! s:sum_to_backward(gys) dict abort
-  return [s:broadcast_to(a:gys[0], self.x_shape)]
+  return [s:broadcast_to(a:gys[0], self.inputs[0].shape)]
 endfunction
 
+
+function! autograd#transpose(x) abort
+  return s:transpose(a:x)
+endfunction
 
 function! s:_transpose(x) abort
   let l:dim = len(a:x.shape)
@@ -595,7 +870,7 @@ function! s:_transpose(x) abort
 
   let l:xd = a:x.data
 
-  let l:out_data = s:vector(a:x.size)
+  let l:out_data = s:vector(len(l:xd))
 
   let l:n_i = a:x.shape[0]
   let l:n_j = a:x.shape[1]
@@ -608,12 +883,12 @@ function! s:_transpose(x) abort
     endfor
   endfor
 
-  return s:Tensor(l:out_data, [l:n_j, l:n_i], a:x.size)
+  return s:Tensor(l:out_data, [l:n_j, l:n_i])
 endfunction
 
 
 function! s:transpose(x) abort
-  return s:Function('s:transpose').apply(a:x)
+  return autograd#Function('s:transpose').apply(a:x)
 endfunction
 
 function! s:transpose_forward(xs) dict abort
@@ -625,13 +900,12 @@ function! s:transpose_backward(gys) dict abort
 endfunction
 
 
-function! s:_matmul(x0, x1) abort
-
-  return l:out
+function! autograd#matmul(a, b) abort
+  return s:matmul(a:a, a:b)
 endfunction
 
 function! s:matmul(a, b) abort
-  return s:Function('s:matmul').apply(a:a, a:b)
+  return autograd#Function('s:matmul').apply(a:a, a:b)
 endfunction
 
 function! s:matmul_forward(xs) dict abort
@@ -667,7 +941,7 @@ function! s:matmul_forward(xs) dict abort
   let l:n_k = l:x0_shape[1]
   let l:n_j = l:x1_shape[1]
 
-  let l:out = s:zeros([l:n_i, l:n_j])
+  let l:out = autograd#zeros([l:n_i, l:n_j])
 
   let l:od = l:out.data
   let l:d0 = l:x0.data
@@ -718,359 +992,43 @@ function! s:matmul_backward(gys) dict abort
 endfunction
 
 
-" it returns random value from 0.0 to 1.0.
-function! s:random_sample()
-  return rand() / 4294967295.0
+function! autograd#reshape(x, shape) abort
+  return s:reshape(a:x, a:shape)
 endfunction
 
-function! s:box_muller(u1, u2) abort
-  return sqrt(-2 * log(a:u1)) * cos(2 * s:pi * a:u2)
-endfunction
-
-function! s:vector(size, ...) abort
-  let l:init_val = get(a:, 1, 0.0)
-  let l:v = repeat([0.0], a:size)
-  return l:init_val != 0.0 ? map(l:v, l:init_val) : l:v
-endfunction
-
-function! s:shape_to_size(shape) abort
-  let l:size = 1
-  for l:x in a:shape
-    let l:size *= l:x
-  endfor
-  return l:size
-endfunction
-
-function! s:get_matrix_shape(array) abort
-  let l:shape = []
-  let l:sub_array = a:array
-  while type(l:sub_array) == v:t_list
-    call add(l:shape, len(l:sub_array))
-    let l:sub_array = l:sub_array[0]
-  endwhile
-  return l:shape
-endfunction
-
-function! s:elementwise(func, inputs) abort
-  if len(a:inputs) == 1
-    let l:x = a:inputs[0]
-    let l:tensor = s:zeros_like(l:x)
-
-    let l:td = l:tensor.data
-    let l:xd = l:x.data
-    for l:i in range(l:x.size)
-      let l:td[l:i] = a:func(l:xd[l:i])
-    endfor
-    return l:tensor
+function! s:reshape(x, shape) abort
+  if a:x.shape == a:shape
+    return a:x
   endif
 
-  let l:x0 = a:inputs[0]
-  let l:x1 = a:inputs[1]
-  let l:tensor = s:zeros_like(l:x0.size > l:x1.size ? l:x0 : l:x1)
+  let l:fn = autograd#Function('s:reshape')
+  let l:fn['shape'] = a:shape
+  return l:fn.apply(a:x)
+endfunction
 
-  let l:td = l:tensor.data
-  let l:x0d = l:x0.data
-  let l:x1d = l:x1.data
-
-  " If at least one of them is scalar, it broadcast.
-  if l:x0.size == 1 || l:x1.size == 1
-    if l:x0.size == l:tensor.size
-      for l:i in range(l:tensor.size)
-        let l:td[l:i] = a:func(l:x0d[l:i], l:x1d[0])
-      endfor
-    else
-      for l:i in range(l:tensor.size)
-        let l:td[l:i] = a:func(l:x0d[0], l:x1d[l:i])
-      endfor
-    endif
-    return l:tensor
+function! s:reshape_forward(xs) dict abort
+  let l:x = a:xs[0]
+  if s:shape_to_size(self.shape) != len(l:x.data)
+    call s:error('Cannot reshape array of size ' . len(l:x.data). ' into ' . string(self.shape))
+    return
   endif
+  return [s:Tensor(l:x.data, self.shape)]
+endfunction
 
-  if l:x0.shape != l:x1.shape
-    call s:error('matrix broadcast is not supported yet.')
-    return l:tensor
-  endif
-
-  for l:i in range(l:tensor.size)
-    let l:td[l:i] = a:func(l:x0d[l:i], l:x1d[l:i])
-  endfor
-  return l:tensor
+function! s:reshape_backward(gys) dict abort
+  return [s:reshape(a:gys[0], self.inputs[0].shape)]
 endfunction
 
 
-" Utilities
-let s:nograd_state_cache = s:enable_backprop
-function! s:nograd_begin() abort
-  let s:nograd_state_cache = s:enable_backprop
-  let s:enable_backprop = 0
+function! autograd#flatten(x) abort
+  return s:reshape(a:x, [len(a:x.data)])
 endfunction
 
-function! s:nograd_end() abort
-  let s:enable_backprop = s:nograd_state_cache
-endfunction
-
-function! s:isclose(a, b, ...) abort
-  let l:rtol = get(a:, 1, 0.00001)
-  let l:atol = get(a:, 2, 0.00000001)
-  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
-endfunction
-
-function! s:allclose(a, b, ...) abort
-  let l:rtol = get(a:, 1, 0.00001)
-  let l:atol = get(a:, 2, 0.00000001)
-
-  let l:results = s:elementwise(function('s:isclose'), [a:a, a:b])
-  return min(l:results.data) == 1
-endfunction
-
-function! s:numerical_grad(f, x) abort
-  let l:eps = s:tensor(0.000001)
-  let l:dx = s:tensor(l:eps.data[0] * 2)
-
-  let l:x0 = s:sub(a:x, l:eps)
-  let l:x1 = s:add(a:x, l:eps)
-
-  let l:y0 = a:f(l:x0)
-  let l:y1 = a:f(l:x1)
-
-  let l:dy = s:sub(l:y1, l:y0)
-  return s:div(l:dy, l:dx)
-endfunction
-
-function! s:gradcheck(f, inputs) abort
-  let l:y = a:f(a:inputs)
-
-  for l:x in a:inputs
-    call l:x.cleargrad()
-  endfor
-  call l:y.backward()
-
-  let l:grads = []
-  for l:x in a:inputs
-    call add(l:grads, l:x.grad)
-  endfor
-
-  call s:nograd_begin()
-  let l:input_num = len(a:inputs)
-  for l:i in range(l:input_num)
-    let l:before_args = l:i > 0 ? a:inputs[:l:i - 1] : []
-    let l:after_args = l:i < l:input_num - 1 ? a:inputs[l:i + 1:] : []
-
-    let l:num_grad = s:numerical_grad(
-      \ {x -> a:f(l:before_args + [x] + l:after_args)},
-      \ a:inputs[l:i])
-
-    call assert_true(s:allclose(l:grads[l:i], l:num_grad))
-  endfor
-  call s:nograd_end()
-endfunction
-
-
-function! s:dump_tensor_as_dotlang(tensor) abort
-  return a:tensor.id . '[label="' . a:tensor.name . '", color=lightblue, style=filled]'
-endfunction
-
-function! s:dump_func_as_dotlang(fn) abort
-  let l:def = a:fn.id . '[label="' . a:fn.name . '", color=gray, style=filled, shape=box]'
-
-  let l:links = []
-  for l:x in a:fn.inputs
-    call add(l:links, l:x.id . ' -> ' . a:fn.id)
-  endfor
-
-  for l:y in a:fn.outputs
-    call add(l:links, a:fn.id . ' -> ' . l:y.id)
-  endfor
-
-  return [l:def, l:links]
-endfunction
-
-
-function! s:dump_graph(last_node, filepath) abort
-  let l:defs = [s:dump_tensor_as_dotlang(a:last_node)]
-  let l:links = []
-  let l:funcs = [a:last_node.parent_fn]
-
-  while len(l:funcs) > 0
-    let l:func = remove(l:funcs, -1)
-    let l:fn_dot = s:dump_func_as_dotlang(l:func)
-    call add(l:defs, l:fn_dot[0])
-    let l:links += l:fn_dot[1]
-
-    for l:x in l:func.inputs
-      call add(l:defs, s:dump_tensor_as_dotlang(l:x))
-
-      if !empty(l:x.parent_fn)
-        call add(l:funcs, l:x.parent_fn)
-      endif
-    endfor
-  endwhile
-
-  let l:links = uniq(sort(l:links))
-
-  let l:texts = ['digraph g {'] + l:defs + l:links + ['}']
-
-  let l:paths = split(a:filepath, '/\|\')
-  let l:path = l:paths[-1]
-  if len(l:paths) > 1
-    let l:dir = join(l:paths[:-2], '/')
-    if !isdirectory(l:dir)
-      call mkdir(l:dir, 'p')
-    endif
-    let l:path = l:dir . '/' . l:path
-  endif
-
-  call writefile(l:texts, l:path . '.dot')
-
-  if executable('dot')
-    echo system(
-      \ 'dot ' . l:path . '.dot' .
-      \ ' -T ' . split(l:path , '\.')[-1] .
-      \ ' -o ' . l:path
-      \ )
-  endif
-endfunction
-
-
-" API
-" Tensor
-function! autograd#tensor(data) abort
-  return s:tensor(a:data)
-endfunction
-
-function! autograd#as_tensor(data) abort
-  return s:as_tensor(a:data)
-endfunction
-
-function! autograd#zeros(shape) abort
-  return s:zeros(a:shape)
-endfunction
-
-function! autograd#zeros_like(tensor) abort
-  return s:zeros_like(a:tensor)
-endfunction
-
-function! autograd#ones(shape) abort
-  return s:ones(a:shape)
-endfunction
-
-function! autograd#ones_like(tensor) abort
-  return s:ones_like(a:tensor)
-endfunction
-
-" Maths
-function! autograd#rand(...) abort
-  let l:shape = a:0 > 0 ? a:000 : [1]
-  let l:size = s:shape_to_size(l:shape)
-  let l:data = map(repeat([0.0], l:size), 's:random_sample()')
-  return s:Tensor(l:data, l:shape, l:size)
-endfunction
-
-function! autograd#uniform(...) abort
-  let l:low = get(a:, 1, 0.0) * 1.0
-  let l:high = get(a:, 2, 1.0) * 1.0
-  let l:shape = get(a:, 3, [1])
-
-  let l:size = s:shape_to_size(l:shape)
-  let l:data = map(
-    \ repeat([0.0], l:size),
-    \ 'l:low + (l:high - l:low) * s:random_sample()')
-  return s:Tensor(l:data, l:shape, l:size)
-endfunction
-
-function! autograd#randn(...) abort
-  let l:shape = a:0 > 0 ? a:000 : [1]
-  let l:size = s:shape_to_size(l:shape)
-  let l:data = map(
-    \ repeat([0.0], l:size),
-    \ 's:box_muller(s:random_sample(), s:random_sample())')
-  return s:Tensor(l:data, l:shape, l:size)
-endfunction
-
-function! autograd#normal(mean, std, ...) abort
-  let l:shape = get(a:, 1, [1])
-
-  let l:size = s:shape_to_size(l:shape)
-  let l:data = map(
-    \ repeat([0.0], l:size),
-    \ 'a:std * s:box_muller(s:random_sample(), s:random_sample()) + a:mean')
-  return s:Tensor(l:data, l:shape, l:size)
-endfunction
-
-" Functions
-function! autograd#Function(name) abort
-  return s:Function(a:name)
-endfunction
-
-function! autograd#add(x0, x1) abort
-  return s:add(a:x0, a:x1)
-endfunction
-
-function! autograd#mul(x0, x1) abort
-  return s:mul(a:x0, a:x1)
-endfunction
-
-function! autograd#sub(x0, x1) abort
-  return s:sub(a:x0, a:x1)
-endfunction
-
-function! autograd#div(x0, x1) abort
-  return s:div(a:x0, a:x1)
-endfunction
-
-function! autograd#pow(x, c) abort
-  return s:pow(a:x, a:c)
-endfunction
-
-function! autograd#log(x) abort
-  return s:log(a:x)
-endfunction
-
-function! autograd#exp(x) abort
-  return s:exp(a:x)
-endfunction
-
-function! autograd#sin(x) abort
-  return s:sin(a:x)
-endfunction
-
-function! autograd#cos(x) abort
-  return s:cos(a:x)
-endfunction
-
-function! autograd#tanh(x) abort
-  return s:tanh(a:x)
-endfunction
-
-function! autograd#abs(x) abort
-  return s:abs(a:x)
-endfunction
-
-function! autograd#sign(x) abort
-  return s:sign(a:x)
-endfunction
-
-function! autograd#sum(x) abort
-  return s:sum(a:x)
-endfunction
-
-function! autograd#broadcast_to(x, shape) abort
-  return s:broadcast_to(a:x, a:shape)
-endfunction
-
-function! autograd#transpose(x) abort
-  return s:transpose(a:x)
-endfunction
-
-function! autograd#matmul(a, b) abort
-  return s:matmul(a:a, a:b)
-endfunction
 
 function! autograd#pi() abort
-  return acos(-1.0)
+  return s:pi
 endfunction
 
-" Utilities
 function! autograd#grad(output, inputs, ...) abort
   let l:create_graph = get(a:, 1, 0)
   let l:retain_outgrad = get(a:, 2, 0)
@@ -1095,22 +1053,52 @@ function! autograd#grad(output, inputs, ...) abort
 endfunction
 
 
-function! autograd#nograd_begin() abort
-  return s:nograd_begin()
+let s:NoGrad = {'state': 0}
+
+function! s:NoGrad.end() abort
+  let s:enable_backprop = self.state
 endfunction
 
-function! autograd#nograd_end() abort
-  return s:nograd_end()
+function! autograd#no_grad() abort
+  let l:h = deepcopy(s:NoGrad)
+  let l:h.state = s:enable_backprop
+  let s:enable_backprop = 0
+  return l:h
 endfunction
 
-function! autograd#numerical_grad(f, x) abort
-  return s:numerical_grad(a:f, a:x)
-endfunction
 
-function! autograd#gradcheck(f, inputs) abort
-  return s:gradcheck(a:f, a:inputs)
-endfunction
+function! autograd#elementwise(func, inputs) abort
+  if len(a:inputs) == 1
+    let l:x = a:inputs[0]
+    let l:tensor = autograd#zeros_like(l:x)
 
-function! autograd#dump_graph(last_node, filepath) abort
-  return s:dump_graph(a:last_node, a:filepath)
+    let l:td = l:tensor.data
+    let l:xd = l:x.data
+    for l:i in range(len(l:xd))
+      let l:td[l:i] = a:func(l:xd[l:i])
+    endfor
+    return l:tensor
+  endif
+
+  let l:x0 = a:inputs[0]
+  let l:x1 = a:inputs[1]
+
+  let l:ng = autograd#no_grad()
+  if len(l:x0.data) > len(l:x1.data)
+    let l:x1 = s:broadcast_to(l:x1, l:x0.shape)
+  else
+    let l:x0 = s:broadcast_to(l:x0, l:x1.shape)
+  endif
+  call l:ng.end()
+
+  let l:tensor = autograd#zeros_like(l:x0)
+
+  let l:td = l:tensor.data
+  let l:x0d = l:x0.data
+  let l:x1d = l:x1.data
+
+  for l:i in range(len(l:tensor.data))
+    let l:td[l:i] = a:func(l:x0d[l:i], l:x1d[l:i])
+  endfor
+  return l:tensor
 endfunction

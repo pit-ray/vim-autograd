@@ -1,31 +1,31 @@
 function! s:test_log() abort
   let F = {xs -> autograd#log(xs[0])}
   let x = autograd#uniform(0, 100, [2, 3])
-  call autograd#gradcheck(F, [x])
+  call autograd#utils#gradcheck(F, [x])
 endfunction
 
 function! s:test_exp() abort
   let F = {xs -> autograd#exp(xs[0])}
   let x = autograd#uniform(0, 10, [2, 3])
-  call autograd#gradcheck(F, [x])
+  call autograd#utils#gradcheck(F, [x])
 endfunction
 
 function! s:test_sin() abort
   let F = {xs -> autograd#sin(xs[0])}
   let x = autograd#uniform(0.0, autograd#pi() * 2, [2, 3])
-  call autograd#gradcheck(F, [x])
+  call autograd#utils#gradcheck(F, [x])
 endfunction
 
 function! s:test_cos() abort
   let F = {xs -> autograd#cos(xs[0])}
   let x = autograd#uniform(0.0, autograd#pi() * 2, [2, 3])
-  call autograd#gradcheck(F, [x])
+  call autograd#utils#gradcheck(F, [x])
 endfunction
 
 function! s:test_tanh() abort
   let F = {xs -> autograd#tanh(xs[0])}
   let x = autograd#rand(2, 3)
-  call autograd#gradcheck(F, [x])
+  call autograd#utils#gradcheck(F, [x])
 endfunction
 
 function! s:test_abs() abort
@@ -74,13 +74,11 @@ function! s:test_matmul() abort
     \ 12.0, 15.0, 12.0,
     \ 12.0, 15.0, 12.0], gx0.data)
   call assert_equal([2, 3], gx0.shape)
-  call assert_equal(6, gx0.size)
 
   call assert_equal([
     \ 6.0, 6.0, 9.0,
     \ 9.0, 11.0, 11.0], gx1.data)
   call assert_equal([3, 2], gx1.shape)
-  call assert_equal(6, gx1.size)
 
   let x2 = autograd#tensor([2, 4, 5])
   let x3 = autograd#tensor([5, 7, 9])
@@ -94,11 +92,9 @@ function! s:test_matmul() abort
 
   call assert_equal([5.0, 7.0, 9.0], gx2.data)
   call assert_equal([3], gx2.shape)
-  call assert_equal(3, gx2.size)
 
   call assert_equal([2.0, 4.0, 5.0], gx3.data)
   call assert_equal([3], gx3.shape)
-  call assert_equal(3, gx3.size)
 endfunction
 
 
