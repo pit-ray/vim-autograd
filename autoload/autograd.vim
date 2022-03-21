@@ -197,7 +197,7 @@ function! s:get_matrix_shape(array) abort
 endfunction
 
 function! autograd#tensor(data) abort
-  let l:data = type(a:data) != v:t_list ? [a:data] : a:data
+  let l:data = s:as_list(a:data)
 
   let l:shape = s:get_matrix_shape(l:data)
   let l:data = flatten(l:data)
@@ -208,6 +208,10 @@ function! autograd#tensor(data) abort
     call s:error('Invalid matrix shape.')
   endif
   return s:Tensor(l:data, l:shape)
+endfunction
+
+function! s:as_list(data) abort
+  return type(a:data) != v:t_list ? [a:data] : a:data
 endfunction
 
 function! autograd#as_tensor(data) abort
@@ -665,7 +669,7 @@ function! autograd#sum(x, ...) abort
 endfunction
 
 function! s:sum(x, axis, keepdims)abort
-  let l:axis = type(a:axis) != v:t_list ? [a:axis] : a:axis
+  let l:axis = s:as_list(a:axis)
 
   let l:x_dim = len(a:x.shape)
   call map(l:axis, 'v:val < 0 ? v:val + l:x_dim : v:val')
@@ -781,7 +785,9 @@ function! s:broadcast_to_forward(xs) dict abort
   let l:x_dim = len(l:x.shape)
 
   if l:x_dim > len(self.shape)
-    call s:error('cannot broadcast from a larger size to a smaller.')
+    call s:error(
+      \ 'cannot broadcast the array of ' .
+      \ string(l:x.shape) . ' to ' . string(self.shape))
   endif
 
   let l:size = s:shape_to_size(self.shape)
@@ -1084,10 +1090,20 @@ function! autograd#elementwise(func, inputs) abort
   let l:x1 = a:inputs[1]
 
   let l:ng = autograd#no_grad()
-  if len(l:x0.data) > len(l:x1.data)
+
+  let l:x0_dim = len(l:x0.shape)
+  let l:x1_dim = len(l:x1.shape)
+
+  if l:x0_dim > l:x1_dim
     let l:x1 = s:broadcast_to(l:x1, l:x0.shape)
-  else
+  elseif x0_dim < l:x1_dim
     let l:x0 = s:broadcast_to(l:x0, l:x1.shape)
+  else
+    if len(l:x0.data) > len(l:x1.data)
+      let l:x1 = s:broadcast_to(l:x1, l:x0.shape)
+    else
+      let l:x0 = s:broadcast_to(l:x0, l:x1.shape)
+    endif
   endif
   call l:ng.end()
 
