@@ -10,7 +10,7 @@ endfunction
 
 function! s:softmax(x) abort
   let y = autograd#exp(a:x)
-  let s = autograd#sum(y, -1, 1)
+  let s = autograd#sum(y, 1, 1)
   return autograd#div(y, s)
 endfunction
 
@@ -23,21 +23,15 @@ endfunction
 let s:MLP = {'params': []}
 function! s:MLP(in_size, h1_size, out_size) abort
   let l:mlp = deepcopy(s:MLP)
-
   let W1 = autograd#randn(a:in_size, a:h1_size).m(0.01).detach()
   let W1.name = 'W1'
-
   let b1 = autograd#zeros([a:h1_size])
   let b1.name = 'b1'
-
   let W2 = autograd#randn(a:h1_size, a:out_size).m(0.01).detach()
   let W2.name = 'W2'
-
   let b2 = autograd#zeros([a:out_size])
   let b2.name = 'b2'
-
   let l:mlp.params = [W1, b1, W2, b2]
-
   return l:mlp
 endfunction
 
@@ -48,7 +42,6 @@ function! s:MLP.forward(x) abort
   let y = s:softmax(y)
   return y
 endfunction
-
 
 function! s:toy_cluster_dataset(sample_num) abort
   let out_x = []
@@ -72,17 +65,6 @@ function! s:toy_cluster_dataset(sample_num) abort
     endif
   endfor
   return [out_x, out_t]
-endfunction
-
-function! s:shuffle(data) abort
-  let size = len(a:data)
-  for l:i in range(size - 1, 0, -1)
-    let l:j = float2nr(autograd#uniform(0.0, l:i - 1, [1]).data[0])
-    let l:tmp = copy(a:data[l:i])
-    let a:data[l:i] = a:data[l:j]
-    let a:data[l:j] = l:tmp
-  endfor
-  return a:data
 endfunction
 
 function! s:train() abort

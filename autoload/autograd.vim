@@ -243,7 +243,7 @@ function! autograd#ones_like(tensor) abort
 endfunction
 
 
-function! s:random_sample()
+function! autograd#random()
   " it returns random value from 0.0 to 1.0.
   return rand() / 4294967295.0
 endfunction
@@ -255,7 +255,7 @@ endfunction
 function! autograd#rand(...) abort
   let l:shape = a:0 > 0 ? a:000 : [1]
   let l:size = s:shape_to_size(l:shape)
-  let l:data = map(repeat([0.0], l:size), 's:random_sample()')
+  let l:data = map(repeat([0.0], l:size), 'autograd#random()')
   return s:Tensor(l:data, l:shape)
 endfunction
 
@@ -267,7 +267,7 @@ function! autograd#uniform(...) abort
   let l:size = s:shape_to_size(l:shape)
   let l:data = map(
     \ repeat([0.0], l:size),
-    \ 'l:low + (l:high - l:low) * s:random_sample()')
+    \ 'l:low + (l:high - l:low) * autograd#random()')
   return s:Tensor(l:data, l:shape)
 endfunction
 
@@ -276,7 +276,7 @@ function! autograd#randn(...) abort
   let l:size = s:shape_to_size(l:shape)
   let l:data = map(
     \ repeat([0.0], l:size),
-    \ 's:box_muller(s:random_sample(), s:random_sample())')
+    \ 's:box_muller(autograd#random(), autograd#random())')
   return s:Tensor(l:data, l:shape)
 endfunction
 
@@ -286,7 +286,7 @@ function! autograd#normal(mean, std, ...) abort
   let l:size = s:shape_to_size(l:shape)
   let l:data = map(
     \ repeat([0.0], l:size),
-    \ 'a:std * s:box_muller(s:random_sample(), s:random_sample()) + a:mean')
+    \ 'a:std * s:box_muller(autograd#random(), autograd#random()) + a:mean')
   return s:Tensor(l:data, l:shape)
 endfunction
 
