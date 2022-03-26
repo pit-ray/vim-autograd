@@ -115,8 +115,7 @@ gx3: [228.0]
 
 ## Classification using Deep Learning
 Since vim-autograd can find the gradient, it is possible to use the gradient descent method for deep learning.  
-
-Here we use the [wine classification dataset](https://archive.ics.uci.edu/ml/datasets/Wine), a public Toy dataset provided by UCI, to classify three types of wine from a 13-dimensional vector.  
+Here we use the [wine classification dataset](https://archive.ics.uci.edu/ml/datasets/Wine), a public toy dataset provided by UCI, to classify three types of wine from a 13-dimensional vector.  
 
 ### Preprocess Dataset
 First, we standarize this data set and divide into training set and test set.
