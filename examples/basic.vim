@@ -4,13 +4,12 @@ function! s:f(x) abort
   return y
 endfunction
 
-function! s:example1() abort
+function! s:main() abort
   let x = autograd#tensor(2.0)
 
   let y = s:f(x)
   call y.backward()
 
-  " output: 56
   echo x.grad.data
 
   let x.name = 'x'
@@ -18,4 +17,4 @@ function! s:example1() abort
   call autograd#utils#dump_graph(y, '.autograd/example1.png')
 endfunction
 
-call s:example1()
+call s:main()

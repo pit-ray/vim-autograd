@@ -42,7 +42,7 @@ call s:example1()
 ```
 
 ### Visualize Graph
-<img src="doc/images/example1.png" height=400 />
+<img src="examples/images/example1.png" height=400 />
 
 ## Installation
 ```vim
