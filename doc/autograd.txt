@@ -1,0 +1,340 @@
+autograd.vim  Automatic differentiation library written in pure vimscript.
+
+==============================================================================
+CONTENTS                                             *vim-autograd-contents*
+    1. Introduction                              |vim-autograd-introduction|
+    2. Install                                        |vim-autograd-install|
+    3. Usage                                            |vim-autograd-usage|
+    4. CLASSES                                        |vim-autograd-classes|
+    5. Functions                                    |vim-autograd-functions|
+    6. License                                        |vim-autograd-license|
+    7. Maintainers                                |vim-autograd-maintainers|
+==============================================================================
+INTRODUCTION                                     *vim-autograd-introduction*
+
+==============================================================================
+INSTALL                                               *vim-autograd-install*
+
+==============================================================================
+USAGE                                                   *vim-autograd-usage*
+
+
+==============================================================================
+CLASSES                                               *vim-autograd-classes*
+    Tensor
+        Tensor.backward()                                |Tensor.backward()|
+        Tensor.cleargrad()                              |Tensor.cleargrad()|
+        Tensor.a()                                              |Tensor.a()|
+        Tensor.m()                                              |Tensor.m()|
+        Tensor.s()                                              |Tensor.s()|
+        Tensor.d()                                              |Tensor.d()|
+        Tensor.p()                                              |Tenspr.p()|
+        Tensor.n()                                              |Tensor.n()|
+        Tensor.T()                                              |Tensor.T()|
+        Tensor.reshape()                                  |Tensor.reshape()|
+        Tensor.clone()                                      |Tensor.clone()|
+        Tensor.detach()                                    |Tensor.detach()|
+    Function
+        Function.apply()                                  |Function.apply()|
+
+    NoGrad
+        NoGrad.end()                                          |NoGrad.end()|
+
+------------------------------------------------------------------------------
+TENSOR
+
+Tensor.backward(create_graph=0, retain_outgrad=0)         *Tensor.backward()*
+Backpropagate from the current tensor to obtain the gradient.
+This function accumulates the gradient in the .grad attribute of the leaves.
+Therefore, multiple calling without |Tensor.cleargrad()| method will add a new
+gradient into the accumulated gradient to perform double-backprop.
+
+    Arguments:
+        create_graph (bool):
+            Construct a computational graph for backpropergation to compute
+            higher-order derivatives.
+
+        retain_outgrad (bool):
+            Holds the gradient of the variable output by each function.
+            if y=f(x), y.grad holds the gradient of df/dy.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = autograd#mul(x, 3.0)
+        call y.backward()
+<
+
+Tensor.cleargrad()                                      *Tensor.cleargrad()*
+Resets the retained gradient.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = autograd#pow(x, 3.0)
+        call y.backward(1)
+        let gx1 = x.grad
+
+        call x.cleargrad()
+        call gx1.backward()
+        let gx2 = x.grad
+<
+
+Tensor.a(other)                                                 *Tensor.a()*
+This method is the same as autograd#add(self, other).
+
+    Arguments:
+        other (Tensor, list, float, Number): operand of the right-hand side.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.a(3.0)
+<
+
+Tensor.m(other)                                                 *Tensor.m()*
+This method is the same as autograd#mul(self, other).
+
+    Arguments:
+        other (Tensor, list, float, Number): operand of the right-hand side.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.m(3.0)
+<
+
+Tensor.s(other)                                                 *Tensor.s()*
+This method is the same as autograd#sub(self, other).
+
+    Arguments:
+        other (Tensor, list, float, Number): operand of the right-hand side.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.s(3.0)
+<
+
+Tensor.d(other)                                                 *Tensor.d()*
+This method is the same as autograd#div(self, other).
+
+    Arguments:
+        other (Tensor, list, float, Number): operand of the right-hand side.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.d(3.0)
+<
+
+Tensor.p(other)                                                 *Tenspr.p()*
+This method is the same as autograd#pow(self, other).
+
+    Arguments:
+        other (Tensor, list, float, Number): operand of the right-hand side.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.p(3.0)
+<
+
+Tensor.n()                                                      *Tensor.n()*
+This method is the same as autograd#mul(self, -1.0).
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.n()
+<
+
+Tensor.T()                                                      *Tensor.T()*
+This method is the same as autograd#transpose(self).
+
+    Example: >
+        let x0 = autograd#randn(2, 3)
+        let x1 = autograd#randn(2, 3)
+        let y = autograd#matmul(x0, x1.T())
+<
+
+Tensor.reshape(s1, s2, ..., sn), Tensor.reshape(shape)    *Tensor.reshape()*
+This method is the same as autograd#reshape(self, [s1, s2, ..., sn]) or
+autograd#reshape(self, shape).
+
+    Arguments
+        shape (list or variadic):
+            When only one argument is given, if its type is v:t_list, it is
+            considered a shape; otherwise, a:000 is considered a shape.
+
+    Example: >
+        let x0 = autograd#randn(2, 3)
+        let x1 = x0.reshape(3, 2)
+        let x2 = x0.reshape([3, 2])
+<
+
+Tensor.clone()                                              *Tensor.clone()*
+Create a new tensor by copying the .data and .shape of the tensor. The created
+tensor is completely independent of the original tensor.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        let y = x.clone()
+<
+
+Tensor.detach()                                            *Tensor.detach()*
+It returns a new tensor detached from the current graph. However, returned
+tensor shares the same data and shape attribute.
+
+    Example: >
+        let x = autograd#randn(2, 3).m(0.01).detach()
+<
+
+------------------------------------------------------------------------------
+FUNCTION
+
+Function.apply(x1, x2, x3, ..., xn)                       *Function.apply()*
+    Example:
+
+------------------------------------------------------------------------------
+NOGRAD
+
+NoGrad.end()                                                  *NoGrad.end()*
+    Example:
+
+==============================================================================
+FUNCTIONS                                           *vim-autograd-functions*
+    Tensor Constructor
+        autograd#tensor()                                |autograd#tensor()|
+        autograd#as_tensor()                          |autograd#as_tensor()|
+        autograd#zeros()                                  |autograd#zeros()|
+        autograd#zeros_like()                        |autograd#zeros_like()|
+        autograd#ones()                                    |autograd#ones()|
+        autograd#ones_like()                          |autograd#ones_like()|
+        autograd#rand()                                    |autograd#rand()|
+        autograd#uniform()                              |autograd#uniform()|
+        autograd#randn()                                  |autograd#randn()|
+        autograd#normal()                                |autograd#normal()|
+
+    Function Constructor
+        autograd#Function()                            |autograd#Function()|
+
+    Differentiable Functions
+        autograd#add()                                      |autograd#add()|
+        autograd#mul()                                      |autograd#mul()|
+        autograd#sub()                                      |autograd#sub()|
+        autograd#div()                                      |autograd#div()|
+        autograd#pow()                                      |autograd#pow()|
+        autograd#sqrt()                                    |autograd#sqrt()|
+        autograd#log()                                      |autograd#log()|
+        autograd#exp()                                      |autograd#exp()|
+        autograd#sin()                                      |autograd#sin()|
+        autograd#cos()                                      |autograd#cos()|
+        autograd#tanh()                                    |autograd#tanh()|
+        autograd#abs()                                      |autograd#abs()|
+        autograd#sign()                                    |autograd#sign()|
+        autograd#sum()                                      |autograd#sum()|
+        autograd#broadcast_to()                    |autograd#broadcast_to()|
+        autograd#sum_to()                                |autograd#sum_to()|
+        autograd#max()                                      |autograd#max()|
+        autograd#maximum()                              |autograd#maximum()|
+        autograd#transpose()                          |autograd#transpose()|
+        autograd#matmul()                                |autograd#matmul()|
+        autograd#reshape()                              |autograd#reshape()|
+        autograd#flatten()                              |autograd#flatten()|
+
+    Mathematical Utilities
+        autograd#manual_seed()                      |autograd#manual_seed()|
+        autograd#random()                                |autograd#random()|
+        autograd#fmax()                                    |autograd#fmax()|
+        autograd#pi()                                        |autograd#pi()|
+        autograd#grad()                                    |autograd#grad()|
+        autograd#no_grad()                              |autograd#no_grad()|
+        autograd#elementwise()                      |autograd#elementwise()|
+
+    Data
+        autograd#data#shuffle()                    |autograd#data#shuffle()|
+
+    Image
+        autograd#image#open_b()                    |autograd#image#open_b()|
+        autograd#image#save_b()                    |autograd#image#save_b()|
+
+    Utilities
+        autograd#utils#dump_graph()            |autograd#utils#dump_graph()|
+        autograd#utils#numerical_grad()    |autograd#utils#numerical_grad()|
+        autograd#utils#gradcheck()              |autograd#utils#gradcheck()|
+
+------------------------------------------------------------------------------
+TENSOR CONSTRUCTOR
+
+autograd#tensor()                                       *autograd#tensor()*
+autograd#as_tensor()                                 *autograd#as_tensor()*
+autograd#zeros()                                         *autograd#zeros()*
+autograd#zeros_like()                               *autograd#zeros_like()*
+autograd#ones()                                           *autograd#ones()*
+autograd#ones_like()                                 *autograd#ones_like()*
+autograd#rand()                                           *autograd#rand()*
+autograd#uniform()                                     *autograd#uniform()*
+autograd#randn()                                         *autograd#randn()*
+autograd#normal()                                       *autograd#normal()*
+
+------------------------------------------------------------------------------
+FUNCTION CONSTRUCTOR
+
+autograd#Function()                                   *autograd#Function()*
+
+------------------------------------------------------------------------------
+DIFFERENTIABLE FUNCTIONS
+
+autograd#add()                                             *autograd#add()*
+autograd#mul()                                             *autograd#mul()*
+autograd#sub()                                             *autograd#sub()*
+autograd#div()                                             *autograd#div()*
+autograd#pow()                                             *autograd#pow()*
+autograd#sqrt()                                           *autograd#sqrt()*
+autograd#log()                                             *autograd#log()*
+autograd#exp()                                             *autograd#exp()*
+autograd#sin()                                             *autograd#sin()*
+autograd#cos()                                             *autograd#cos()*
+autograd#tanh()                                           *autograd#tanh()*
+autograd#abs()                                             *autograd#abs()*
+autograd#sign()                                           *autograd#sign()*
+autograd#sum()                                             *autograd#sum()*
+autograd#broadcast_to()                           *autograd#broadcast_to()*
+autograd#sum_to()                                       *autograd#sum_to()*
+autograd#max()                                             *autograd#max()*
+autograd#maximum()                                     *autograd#maximum()*
+autograd#transpose()                                 *autograd#transpose()*
+autograd#matmul()                                       *autograd#matmul()*
+autograd#reshape()                                     *autograd#reshape()*
+autograd#flatten()                                     *autograd#flatten()*
+
+------------------------------------------------------------------------------
+MATHEMATICAL UTILITIES
+
+autograd#manual_seed()                             *autograd#manual_seed()*
+autograd#random()                                       *autograd#random()*
+autograd#fmax()                                           *autograd#fmax()*
+autograd#pi()                                               *autograd#pi()*
+autograd#grad()                                           *autograd#grad()*
+autograd#no_grad()                                     *autograd#no_grad()*
+autograd#elementwise()                             *autograd#elementwise()*
+
+------------------------------------------------------------------------------
+DATA
+
+autograd#data#shuffle()                           *autograd#data#shuffle()*
+
+------------------------------------------------------------------------------
+IMAGE
+autograd#image#open_b()                           *autograd#image#open_b()*
+autograd#image#save_b()                           *autograd#image#save_b()*
+
+------------------------------------------------------------------------------
+UTILITIES
+
+autograd#utils#dump_graph()                   *autograd#utils#dump_graph()*
+autograd#utils#numerical_grad()           *autograd#utils#numerical_grad()*
+autograd#utils#gradcheck()                     *autograd#utils#gradcheck()*
+
+==============================================================================
+LICENSE                                               *vim-autograd-license*
+
+==============================================================================
+MAINTAINERS                                       *vim-autograd-maintainers*
+
+
+
+vim:tw=78:ts=8:ft=help-norl:
