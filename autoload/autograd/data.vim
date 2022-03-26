@@ -1,4 +1,4 @@
-" Fisher-Yates shuffle
+" Fisher-Yates shuffle algorithm
 function! autograd#data#shuffle(data) abort
   for l:i in range(len(a:data) - 1, 1, -1)
     let l:j = float2nr((l:i + 0.99999) * autograd#random())

@@ -98,6 +98,71 @@ function! s:test_matmul() abort
 endfunction
 
 
+function! s:test_max() abort
+  " case 1
+  let x1 = autograd#tensor([[2.0, 2.1, 1.9], [3.1, 2.0, 3.0]])
+  let y1 = autograd#max(x1)
+  call assert_equal([3.1], y1.data)
+  call assert_equal([1], y1.shape)
+
+  call y1.backward()
+  call assert_equal([0.0, 0.0, 0.0, 1.0, 0.0, 0.0], x1.grad.data)
+  call assert_equal([2, 3], x1.grad.shape)
+
+  " case 2
+  let x2 = autograd#tensor([5, 7, 9])
+  let y2 = autograd#pow(autograd#max(x2), 2)
+  call assert_equal([81.0], y2.data)
+  call assert_equal([1], y2.shape)
+
+  call y2.backward()
+  call assert_equal([0.0, 0.0, 18.0], x2.grad.data)
+  call assert_equal([3], x2.grad.shape)
+endfunction
+
+
+function! s:test_maximum() abort
+  " case 1
+  let x0 = autograd#tensor([1, 2, -1])
+  let x1 = autograd#tensor([3, 0, 4])
+  let y0 = autograd#maximum(x0, x1)
+  call assert_equal([3.0, 2.0, 4.0], y0.data)
+  call assert_equal([3], y0.shape)
+
+  call y0.backward()
+  call assert_equal([0.0, 1.0, 0.0], x0.grad.data)
+  call assert_equal([3], x0.grad.shape)
+  call assert_equal([1.0, 0.0, 1.0], x1.grad.data)
+  call assert_equal([3], x1.grad.shape)
+
+  " case 2
+  let x2 = autograd#tensor([4, -1, 9])
+  let x3 = autograd#tensor([5])
+  let y2 = autograd#maximum(x2, x3)
+  call assert_equal([5.0, 5.0, 9.0], y2.data)
+  call assert_equal([3], y2.shape)
+
+  call y2.backward()
+  call assert_equal([0.0, 0.0, 1.0], x2.grad.data)
+  call assert_equal([3], x2.grad.shape)
+  call assert_equal([2.0], x3.grad.data)
+  call assert_equal([1], x3.grad.shape)
+
+  " case 3
+  let x4 = autograd#tensor([[2, 4, 5], [6, -1, 5]])
+  let x5 = autograd#tensor([3, 2, 5])
+  let y4  = autograd#maximum(x4, x5)
+  call assert_equal([3.0, 4.0, 5.0, 6.0, 2.0, 5.0], y4.data)
+  call assert_equal([2, 3], y4.shape)
+
+  call y4.backward()
+  call assert_equal([0.0, 1.0, 1.0, 1.0, 0.0, 1.0], x4.grad.data)
+  call assert_equal([2, 3], x4.grad.shape)
+  call assert_equal([1.0, 1.0, 0.0], x5.grad.data)
+  call assert_equal([3], x5.grad.shape)
+endfunction
+
+
 function! test_math#run_test_suite() abort
   call s:test_log()
   call s:test_exp()
@@ -106,5 +171,7 @@ function! test_math#run_test_suite() abort
   call s:test_tanh()
   call s:test_abs()
   call s:test_sign()
+  call s:test_max()
   call s:test_matmul()
+  call s:test_maximum()
 endfunction

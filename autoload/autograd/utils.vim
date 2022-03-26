@@ -8,7 +8,7 @@ function! s:allclose(a, b, ...) abort
   let l:rtol = get(a:, 1, 0.00001)
   let l:atol = get(a:, 2, 0.00000001)
 
-  let l:results = autograd#elementwise(function('s:isclose'), [a:a, a:b])
+  let l:results = autograd#elementwise([a:a, a:b], function('s:isclose'))
   return min(l:results.data) == 1
 endfunction
 

@@ -197,7 +197,7 @@ function! s:get_matrix_shape(array) abort
 endfunction
 
 function! autograd#tensor(data) abort
-  let l:data = s:as_list(a:data)
+  let l:data = s:as_list(deepcopy(a:data))
 
   let l:shape = s:get_matrix_shape(l:data)
   let l:data = flatten(l:data)
@@ -243,9 +243,14 @@ function! autograd#ones_like(tensor) abort
 endfunction
 
 
-function! autograd#random()
+let s:random_seed = srand()
+function! autograd#manual_seed(seed) abort
+  let s:random_seed = srand(a:seed)
+endfunction
+
+function! autograd#random() abort
   " it returns random value from 0.0 to 1.0.
-  return rand() / 4294967295.0
+  return rand(s:random_seed) / 4294967295.0
 endfunction
 
 function! s:box_muller(u1, u2) abort
@@ -356,7 +361,7 @@ function! s:add(x0, x1) abort
 endfunction
 
 function! s:add_forward(xs) dict abort
-  return [autograd#elementwise(function('s:_add'), a:xs)]
+  return [autograd#elementwise(a:xs, function('s:_add'))]
 endfunction
 
 function! s:add_backward(gys) dict abort
@@ -386,7 +391,7 @@ function! s:mul(x0, x1) abort
 endfunction
 
 function! s:mul_forward(xs) dict abort
-  return [autograd#elementwise(function('s:_mul'), a:xs)]
+  return [autograd#elementwise(a:xs, function('s:_mul'))]
 endfunction
 
 function! s:mul_backward(gys) dict abort
@@ -416,7 +421,7 @@ function! s:sub(x0, x1) abort
 endfunction
 
 function! s:sub_forward(xs) dict abort
-  return [autograd#elementwise(function('s:_sub'), a:xs)]
+  return [autograd#elementwise(a:xs, function('s:_sub'))]
 endfunction
 
 function! s:sub_backward(gys) dict abort
@@ -446,7 +451,7 @@ function! s:div(x0, x1) abort
 endfunction
 
 function! s:div_forward(xs) dict abort
-  return [autograd#elementwise(function('s:_div'), a:xs)]
+  return [autograd#elementwise(a:xs, function('s:_div'))]
 endfunction
 
 function! s:div_backward(gys) dict abort
@@ -474,7 +479,7 @@ function! s:pow(x, c) abort
 endfunction
 
 function! s:pow_forward(xs) dict abort
-  return [autograd#elementwise({a, b ->pow(a, b)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a, b ->pow(a, b)})]
 endfunction
 
 function! s:pow_backward(gys) dict abort
@@ -495,6 +500,11 @@ function! s:pow_backward(gys) dict abort
 endfunction
 
 
+function! autograd#sqrt(x) abort
+  return s:pow(a:x, 0.5)
+endfunction
+
+
 function! autograd#log(x) abort
   return s:log(a:x)
 endfunction
@@ -504,7 +514,7 @@ function! s:log(x) abort
 endfunction
 
 function! s:log_forward(xs) dict abort
-  return [autograd#elementwise({a -> log(a)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a -> log(a)})]
 endfunction
 
 function! s:log_backward(gys) dict abort
@@ -522,7 +532,7 @@ function! s:exp(x) abort
 endfunction
 
 function! s:exp_forward(xs) dict abort
-  return [autograd#elementwise({a -> exp(a)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a -> exp(a)})]
 endfunction
 
 function! s:exp_backward(gys) dict abort
@@ -540,7 +550,7 @@ function! s:sin(x) abort
 endfunction
 
 function! s:sin_forward(xs) dict abort
-  return [autograd#elementwise({a -> sin(a)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a -> sin(a)})]
 endfunction
 
 function! s:sin_backward(gys) dict abort
@@ -558,7 +568,7 @@ function! s:cos(x) abort
 endfunction
 
 function! s:cos_forward(xs) dict abort
-  return [autograd#elementwise({a -> cos(a)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a -> cos(a)})]
 endfunction
 
 function! s:cos_backward(gys) dict abort
@@ -576,7 +586,7 @@ function! s:tanh(x) abort
 endfunction
 
 function! s:tanh_forward(xs) dict abort
-  return [autograd#elementwise({a -> tanh(a)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a -> tanh(a)})]
 endfunction
 
 function! s:tanh_backward(gys) dict abort
@@ -594,7 +604,7 @@ function! s:abs(x) abort
 endfunction
 
 function! s:abs_forward(xs) dict abort
-  return [autograd#elementwise({a -> abs(a)}, a:xs)]
+  return [autograd#elementwise(a:xs, {a -> abs(a)})]
 endfunction
 
 function! s:abs_backward(gys) dict abort
@@ -616,7 +626,7 @@ function! s:sign(x) abort
 endfunction
 
 function! s:sign_forward(xs) dict abort
-  return [autograd#elementwise(function('s:_sign'), a:xs)]
+  return [autograd#elementwise(a:xs, function('s:_sign'))]
 endfunction
 
 function! s:sign_backward(gys) dict abort
@@ -860,6 +870,63 @@ function! s:sum_to_backward(gys) dict abort
 endfunction
 
 
+function! autograd#fmax(list_obj) abort
+  let l:max = 0.0
+  for l:x in a:list_obj
+    if l:max < l:x
+      let l:max = l:x
+    endif
+  endfor
+  return l:max
+endfunction
+
+function! autograd#max(x) abort
+  return s:max(a:x)
+endfunction
+
+function! s:max(x) abort
+  return autograd#Function('s:max').apply(a:x)
+endfunction
+
+function! s:max_forward(xs) dict abort
+  return [s:Tensor([autograd#fmax(a:xs[0].data)], [1])]
+endfunction
+
+function! s:max_backward(gys) dict abort
+  let l:x = self.inputs[0]
+  let l:y = self.outputs[0]
+  let l:gx_mask = autograd#elementwise([l:x, l:y], {a, b -> 1.0 * (a == b)})
+  let l:gx = autograd#mul(a:gys[0], l:gx_mask)
+  return [l:gx]
+endfunction
+
+
+function! autograd#maximum(a, b) abort
+  return s:maximum(a:a, a:b)
+endfunction
+
+function! s:maximum(a, b) abort
+  return autograd#Function('s:maximum').apply(a:a, a:b)
+endfunction
+
+function! s:maximum_forward(xs) dict abort
+  return [autograd#elementwise(a:xs, {a, b -> a >= b ? a : b})]
+endfunction
+
+function! s:maximum_backward(gys) dict abort
+  let l:x0 = self.inputs[0]
+  let l:x1 = self.inputs[1]
+
+  let l:gx0_mask = autograd#elementwise([l:x0, l:x1], {a, b -> a >= b})
+  let l:gx1_mask = autograd#elementwise([l:x0, l:x1], {a, b -> a < b})
+
+  let l:gx0 = autograd#mul(a:gys[0], l:gx0_mask)
+  let l:gx1 = autograd#mul(a:gys[0], l:gx1_mask)
+
+  return [s:sum_to(l:gx0, l:x0.shape), s:sum_to(l:gx1, l:x1.shape)]
+endfunction
+
+
 function! autograd#transpose(x) abort
   return s:transpose(a:x)
 endfunction
@@ -891,7 +958,6 @@ function! s:_transpose(x) abort
 
   return s:Tensor(l:out_data, [l:n_j, l:n_i])
 endfunction
-
 
 function! s:transpose(x) abort
   return autograd#Function('s:transpose').apply(a:x)
@@ -1073,10 +1139,12 @@ function! autograd#no_grad() abort
 endfunction
 
 
-function! autograd#elementwise(func, inputs) abort
+function! autograd#elementwise(inputs, func, ...) abort
+  let l:out = get(a:, 1, {})
+
   if len(a:inputs) == 1
     let l:x = a:inputs[0]
-    let l:tensor = autograd#zeros_like(l:x)
+    let l:tensor = empty(l:out) ? autograd#zeros_like(l:x) : l:out
 
     let l:td = l:tensor.data
     let l:xd = l:x.data
@@ -1107,7 +1175,7 @@ function! autograd#elementwise(func, inputs) abort
   endif
   call l:ng.end()
 
-  let l:tensor = autograd#zeros_like(l:x0)
+  let l:tensor = empty(l:out) ? autograd#zeros_like(l:x0) : l:out
 
   let l:td = l:tensor.data
   let l:x0d = l:x0.data
