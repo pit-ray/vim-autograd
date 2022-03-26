@@ -45,9 +45,9 @@ $ sudo apt install graphviz
 If not installed, only the DOT language source code is generated.
 
 ## Higher-order Differentiation
-Because vim-autograd supports double backprop feature, you can do higher-order differentiation by further differentiating the first-order derivative.  
+Because vim-autograd supports double-backprop feature, you can do higher-order differentiation by further differentiating the first-order derivative.  
 
-`.backward()` and `autograd#grad()` are available for differentiation. The former requires resetting the gradient as it accumulates in the input variable in higher-order differentiation, while the latter does not pollute the gradient of the input variable. The folloring code does almost the same thing.  
+`.backward()` and `autograd#grad()` are available for differentiation. The former requires resetting the gradient as it accumulates in the input variable in higher-order differentiation, while the latter does not pollute the gradient of the input variable. The following code does almost the same thing.  
 
 **.backward()**
 ```vim
@@ -118,7 +118,7 @@ Since vim-autograd can find the gradient, it is possible to use the gradient des
 Here we use the [wine classification dataset](https://archive.ics.uci.edu/ml/datasets/Wine), a public toy dataset provided by UCI, to classify three types of wine from a 13-dimensional vector.  
 
 ### Preprocess Dataset
-First, we standarize this data set and divide into training set and test set.
+First, we standardize this data set and divide into training set and test set.
 
 [**examples/wine-classify.vim**](wine-classify.vim)
 ```vim
@@ -185,7 +185,7 @@ endfunction
 ```
 
 ### Build Neural Network
-A multilayer network is then constructed using fully connected layers. However, we need to use the differentiable functions provided by vim-autograd.
+A multi-layer network is then constructed using fully connected layers. However, we need to use the differentiable functions provided by vim-autograd.
 
 [**examples/wine-classify.vim**](wine-classify.vim)
 ```vim

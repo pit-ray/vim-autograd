@@ -1,14 +1,9 @@
-function! s:isclose(a, b, ...) abort
-  let l:rtol = get(a:, 1, 0.00001)
-  let l:atol = get(a:, 2, 0.00000001)
-  return abs(a:a - a:b) <= (l:atol + l:rtol * abs(a:b))
+function! s:isclose(a, b, rtol=0.00001, atol=0.00000001) abort
+  return abs(a:a - a:b) <= (a:atol + a:rtol * abs(a:b))
 endfunction
 
-function! s:allclose(a, b, ...) abort
-  let l:rtol = get(a:, 1, 0.00001)
-  let l:atol = get(a:, 2, 0.00000001)
-
-  let l:results = autograd#elementwise([a:a, a:b], function('s:isclose'))
+function! s:allclose(a, b, rtol=0.00001, atol=0.00000001) abort
+  let l:results = autograd#elementwise([a:a, a:b], {x, y -> s:isclose(x, y, a:rtol, a:atol)})
   return min(l:results.data) == 1
 endfunction
 

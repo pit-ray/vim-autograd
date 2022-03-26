@@ -41,10 +41,7 @@ function! s:comp_tensor_gen(lhs, rhs) abort
   endif
 endfunction
 
-function! s:Tensor.backward(...) abort
-  let l:create_graph = get(a:, 1, 0)
-  let l:retain_outgrad = get(a:, 2, 0)
-
+function! s:Tensor.backward(create_graph=0, retain_outgrad=0) abort
   if empty(self.grad)
     let self.grad = autograd#ones_like(self)
   endif
@@ -65,7 +62,7 @@ function! s:Tensor.backward(...) abort
 
     " If create_graph is false, does not create graph in the following range.
     " ---------------------------------------------
-    if !l:create_graph
+    if !a:create_graph
       let l:ng = autograd#no_grad()
     endif
 
@@ -96,7 +93,7 @@ function! s:Tensor.backward(...) abort
     " Usually when we differentiate y=f(x) we are
     " interested in df/dx and do not need df/dy(=1) etc.
     " Therefore, we usually release.
-    if !l:retain_outgrad
+    if !a:retain_outgrad
       for l:output in l:func.outputs
         if index(l:input_grad_ids, l:output.grad.id) == -1
           let l:output.grad = {}
@@ -104,7 +101,7 @@ function! s:Tensor.backward(...) abort
       endfor
     endif
 
-    if !l:create_graph
+    if !a:create_graph
       call l:ng.end()
     endif
     " ---------------------------------------------
@@ -172,10 +169,9 @@ function! s:is_tensor(x) abort
   return has_key(a:x, 'data') && has_key(a:x, 'grad')
 endfunction
 
-function! s:vector(size, ...) abort
-  let l:init_val = get(a:, 1, 0.0)
+function! s:vector(size, init_val=0.0) abort
   let l:v = repeat([0.0], a:size)
-  return l:init_val != 0.0 ? map(l:v, l:init_val) : l:v
+  return a:init_val != 0.0 ? map(l:v, a:init_val) : l:v
 endfunction
 
 function! s:shape_to_size(shape) abort
@@ -264,16 +260,12 @@ function! autograd#rand(...) abort
   return s:Tensor(l:data, l:shape)
 endfunction
 
-function! autograd#uniform(...) abort
-  let l:low = get(a:, 1, 0.0) * 1.0
-  let l:high = get(a:, 2, 1.0) * 1.0
-  let l:shape = get(a:, 3, [1])
-
-  let l:size = s:shape_to_size(l:shape)
+function! autograd#uniform(low=0.0, high=1.0, shape=[1]) abort
+  let l:size = s:shape_to_size(a:shape)
   let l:data = map(
     \ repeat([0.0], l:size),
-    \ 'l:low + (l:high - l:low) * autograd#random()')
-  return s:Tensor(l:data, l:shape)
+    \ 'a:low + (a:high - a:low) * autograd#random()')
+  return s:Tensor(l:data, a:shape)
 endfunction
 
 function! autograd#randn(...) abort
@@ -285,14 +277,12 @@ function! autograd#randn(...) abort
   return s:Tensor(l:data, l:shape)
 endfunction
 
-function! autograd#normal(mean, std, ...) abort
-  let l:shape = get(a:, 1, [1])
-
-  let l:size = s:shape_to_size(l:shape)
+function! autograd#normal(mean, std, shape=[1]) abort
+  let l:size = s:shape_to_size(a:shape)
   let l:data = map(
     \ repeat([0.0], l:size),
     \ 'a:std * s:box_muller(autograd#random(), autograd#random()) + a:mean')
-  return s:Tensor(l:data, l:shape)
+  return s:Tensor(l:data, a:shape)
 endfunction
 
 
@@ -672,10 +662,8 @@ function! s:right_side_sum_to(x, shape) abort
 endfunction
 
 
-function! autograd#sum(x, ...) abort
-  let l:axis = get(a:, 1, [])
-  let l:keepdims = get(a:, 2, 0)
-  return s:sum(a:x, l:axis, l:keepdims)
+function! autograd#sum(x, axis=[], keepdims=0) abort
+  return s:sum(a:x, a:axis, a:keepdims)
 endfunction
 
 function! s:sum(x, axis, keepdims)abort
@@ -1101,10 +1089,7 @@ function! autograd#pi() abort
   return s:pi
 endfunction
 
-function! autograd#grad(output, inputs, ...) abort
-  let l:create_graph = get(a:, 1, 0)
-  let l:retain_outgrad = get(a:, 2, 0)
-
+function! autograd#grad(output, inputs, create_graph=0, retain_outgrad=0) abort
   let l:xs = s:is_tensor(a:inputs) ? [a:inputs] : a:inputs
 
   let l:old_grads = []
@@ -1113,7 +1098,7 @@ function! autograd#grad(output, inputs, ...) abort
     call l:x.cleargrad()
   endfor
 
-  call a:output.backward(l:create_graph, l:retain_outgrad)
+  call a:output.backward(a:create_graph, a:retain_outgrad)
 
   let l:grads = []
   for l:i in range(len(l:xs))
@@ -1139,12 +1124,10 @@ function! autograd#no_grad() abort
 endfunction
 
 
-function! autograd#elementwise(inputs, func, ...) abort
-  let l:out = get(a:, 1, {})
-
+function! autograd#elementwise(inputs, func, out={}) abort
   if len(a:inputs) == 1
     let l:x = a:inputs[0]
-    let l:tensor = empty(l:out) ? autograd#zeros_like(l:x) : l:out
+    let l:tensor = empty(a:out) ? autograd#zeros_like(l:x) : a:out
 
     let l:td = l:tensor.data
     let l:xd = l:x.data
@@ -1175,7 +1158,7 @@ function! autograd#elementwise(inputs, func, ...) abort
   endif
   call l:ng.end()
 
-  let l:tensor = empty(l:out) ? autograd#zeros_like(l:x0) : l:out
+  let l:tensor = empty(a:out) ? autograd#zeros_like(l:x0) : a:out
 
   let l:td = l:tensor.data
   let l:x0d = l:x0.data
