@@ -24,8 +24,6 @@ let s:MLP = {'params': []}
 function! s:MLP(in_size, ...) abort
   let l:mlp = deepcopy(s:MLP)
 
-  " let std = sqrt(1 / a:in_size)
-  " let std = 0.01
   let std = sqrt(2.0 / a:in_size)
   let l:W = autograd#normal(0, std, [a:in_size, a:1])
   let l:b = autograd#zeros([a:1])
