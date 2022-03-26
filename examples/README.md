@@ -1,5 +1,5 @@
 # vim-autograd Examples
-Here are some examples of using vim-autograd. Each example can be run like `source examples/*.vim` in Vim with vim-autograd installed.
+Here are some examples of using vim-autograd. Each example can be run like `:source examples/*.vim` in Vim with vim-autograd installed.
 
 ## Simplest Differentiation
 In this example, do define-by-run style automatic differentiation using a PyTorch-like interface.
@@ -38,7 +38,7 @@ call s:main()
 **Generated computational graph**  
 <img src="images/example1.png" height=400 />
 
-To output a graph as an image file, **graphviz** must be installed. On Ubuntu, this can be done with the following command.
+To output a graph as an image file, [**graphviz**](https://graphviz.org/) must be installed. On Ubuntu, this can be done with the following command.
 ```sh
 $ sudo apt install graphviz
 ```
