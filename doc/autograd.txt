@@ -451,7 +451,7 @@ not generate intermediate objects in the computed graph. The
 {name}_forward and {name}_backward methods, respectively.
 
     Arguments:
-        name (string):
+        name (`String`):
             This argument must also have a scope prefix such as `s:`.
 
     Example: >
@@ -472,7 +472,7 @@ not generate intermediate objects in the computed graph. The
 
 ------------------------------------------------------------------------------
 autograd#add(input, other)                                  *autograd#add()*
-Add like input + other.
+Add like input + other element-wise.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -482,11 +482,12 @@ Add like input + other.
     Example: >
         let x = autograd#tensor(2.0)
         let y = autograd#add(x, 4.0)
+        " y.data: [6.0]
 <
 
 ------------------------------------------------------------------------------
 autograd#mul(input, other)                                  *autograd#mul()*
-Multiply like input * other.
+Multiply like input * other element-wise.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -500,11 +501,12 @@ Multiply like input * other.
     Example: >
         let x = autograd#tensor(4.0)
         let y = autograd#mul(x, 2.0)
+        " y.data: [8.0]
 <
 
 ------------------------------------------------------------------------------
 autograd#sub(input, other)                                  *autograd#sub()*
-Subtract like input - other.
+Subtract like input - other element-wise.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -518,11 +520,12 @@ Subtract like input - other.
     Example: >
         let x = autograd#tensor(5.0)
         let y = autograd#sub(x, 2.0)
+        " y.data: [3.0]
 <
 
 ------------------------------------------------------------------------------
 autograd#div(input, other)                                  *autograd#div()*
-Divide like input / other.
+Divide like input / other element-wise.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -536,11 +539,12 @@ Divide like input / other.
     Example: >
         let x = autograd#tensor(6.0)
         let y = autograd#div(x, 2.0)
+        " y.data: [3.0]
 <
 
 ------------------------------------------------------------------------------
 autograd#pow(input, other)                                  *autograd#pow()*
-Power like input ** other (input ^ other).
+Compute element-wise power like input ** other (input ^ other).
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -554,11 +558,13 @@ Power like input ** other (input ^ other).
     Example: >
         let x = autograd#tensor(2.0)
         let y = autograd#pow(x, 5.0)
+        " y.data: [32.0]
 <
 
 ------------------------------------------------------------------------------
 autograd#sqrt(input)                                       *autograd#sqrt()*
-Calculate square root of input. This is the same as autograd#pow(input, 0.5).
+Calculate element-wise square root of input. This is the same as
+autograd#pow(input, 0.5).
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -567,10 +573,13 @@ Calculate square root of input. This is the same as autograd#pow(input, 0.5).
     Example: >
         let x = autograd#tensor(2.0)
         let y = autograd#sqrt(x)
+        " y.data: [1.414214]
 <
 
 ------------------------------------------------------------------------------
 autograd#log(input)                                         *autograd#log()*
+Calculate the natural logarithm log that the inverse of the exponential
+function in base e.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -579,10 +588,12 @@ autograd#log(input)                                         *autograd#log()*
     Example: >
         let x = autograd#tensor(2.0)
         let y = autograd#log(x)
+        " y.data: 0.693147
 <
 
 ------------------------------------------------------------------------------
 autograd#exp(input)                                         *autograd#exp()*
+Calculate the exponential.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -591,22 +602,26 @@ autograd#exp(input)                                         *autograd#exp()*
     Example: >
         let x = autograd#tensor(2.0)
         let y = autograd#exp(x)
+        " y.data: 7.389056
 <
 
 ------------------------------------------------------------------------------
 autograd#sin(theta)                                         *autograd#sin()*
+Calculate element-wise sine.
 
     Arguments:
-        theta (Tensor, `List`, `Float`, `Number`):
+        theta (Tensor, `List`, `Float`, `Number`):j
             This argument is automatically converted to a Tensor.
 
     Example: >
         let x = autograd#tensor(autograd#pi() / 4)
         let y = autograd#sin(x)
+        " y.data: 0.707107
 <
 
 ------------------------------------------------------------------------------
 autograd#cos(theta)                                         *autograd#cos()*
+Calculate element-wise cosine.
 
     Arguments:
         theta (Tensor, `List`, `Float`, `Number`):
@@ -615,10 +630,12 @@ autograd#cos(theta)                                         *autograd#cos()*
     Example: >
         let x = autograd#tensor(autograd#pi() / 4)
         let y = autograd#cos(x)
+        " y.data: 0.707107
 <
 
 ------------------------------------------------------------------------------
 autograd#tanh(input)                                       *autograd#tanh()*
+Calculate element-wise hyperbolic tangent.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -627,10 +644,12 @@ autograd#tanh(input)                                       *autograd#tanh()*
     Example: >
         let x = autograd#tensor(2.0)
         let y = autograd#tanh(x)
+        " y.data: 0.964028
 <
 
 ------------------------------------------------------------------------------
 autograd#abs(input)                                         *autograd#abs()*
+Calculate element-wise absolute value.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -644,12 +663,16 @@ autograd#abs(input)                                         *autograd#abs()*
 
 ------------------------------------------------------------------------------
 autograd#sign(input)                                       *autograd#sign()*
+Compute element-wise sign function. sign(x) returns 1 when x is greater than
+0, 0 when x is 0, and -1 when x is less than 0.
+
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
             This argument is automatically converted to a Tensor.
+
     Example: >
         let x = autograd#tensor([-2.0, 1.0, 0.0])
-        let y = autograd#abs(x)
+        let y = autograd#sign(x)
         " y.data: [-1.0, 1.0, 0.0]
 <
 
@@ -829,24 +852,43 @@ autograd#elementwise(inputs, f, out={})             *autograd#elementwise()*
 
 ------------------------------------------------------------------------------
 autograd#data#shuffle(list_obj)                    *autograd#data#shuffle()*
+Sort the list randomly. It based on Fisher-Yates shuffle algorithm,
+
     Arguments:
-        list_obj:
+        list_obj (`List`):
+            A list of `Float` or `Number`.
+
     Example: >
+        let x = autograd#data#shuffle(range(10))
+        " x: [8, 5, 1, 6, 4, 7, 9, 3, 2, 0]
 <
 
 ------------------------------------------------------------------------------
 autograd#image#open_b(filepath)                    *autograd#image#open_b()*
+Reads a file as a `Blob` object and returns it as a `List`.
+
     Argments:
-        filepath:
+        filepath (`String`):
+            The path to the file to be read.
+
     Example: >
+        let x = autograd#image#open_b('sample.png')
 <
 
 ------------------------------------------------------------------------------
 autograd#image#save_b(data, filepath)              *autograd#image#save_b()*
+Writes the list to a file as a blob.
+
     Arguments:
-        data:
-        filepath:
+        data (`List`):
+            This is converted to `Blob`.
+
+        filepath (`String`):
+            The path to the file to be written.
+
     Example: >
+        let x = autograd#image#open_b('sample.png')
+        call autograd#image#save_b(x, 'sample_copy.png')
 <
 
 ------------------------------------------------------------------------------
