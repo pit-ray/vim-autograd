@@ -277,7 +277,7 @@ function! autograd#randn(...) abort
   return s:Tensor(l:data, l:shape)
 endfunction
 
-function! autograd#normal(mean, std, shape=[1]) abort
+function! autograd#normal(mean=0.0, std=1.0, shape=[1]) abort
   let l:size = s:shape_to_size(a:shape)
   let l:data = map(
     \ repeat([0.0], l:size),
