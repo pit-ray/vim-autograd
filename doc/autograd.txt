@@ -4,20 +4,18 @@ autograd.vim  Automatic differentiation library written in pure vimscript.
 CONTENTS                                             *vim-autograd-contents*
     1. Introduction                              |vim-autograd-introduction|
     2. Install                                        |vim-autograd-install|
-    3. Usage                                            |vim-autograd-usage|
-    4. CLASSES                                        |vim-autograd-classes|
-    5. Functions                                    |vim-autograd-functions|
-    6. License                                        |vim-autograd-license|
-    7. Maintainers                                |vim-autograd-maintainers|
+    3. CLASSES                                        |vim-autograd-classes|
+    4. Functions                                    |vim-autograd-functions|
+    5. License                                        |vim-autograd-license|
+    6. Maintainers                                |vim-autograd-maintainers|
 ==============================================================================
 INTRODUCTION                                     *vim-autograd-introduction*
 
 ==============================================================================
 INSTALL                                               *vim-autograd-install*
-
-==============================================================================
-USAGE                                                   *vim-autograd-usage*
-
+If you are using plug.vim, can install as follows. >
+    Plug 'pit-ray/vim-autograd'
+<
 
 ==============================================================================
 CLASSES                                               *vim-autograd-classes*
@@ -186,13 +184,15 @@ tensor shares the same data and shape attribute.
 FUNCTION
 
 Function.apply(x1, x2, x3, ..., xn)                       *Function.apply()*
-    Example:
+    Example: >
+<
 
 ------------------------------------------------------------------------------
 NOGRAD
 
 NoGrad.end()                                                  *NoGrad.end()*
-    Example:
+    Example: >
+<
 
 ==============================================================================
 FUNCTIONS                                           *vim-autograd-functions*
@@ -260,81 +260,232 @@ FUNCTIONS                                           *vim-autograd-functions*
 TENSOR CONSTRUCTOR
 
 autograd#tensor()                                       *autograd#tensor()*
+    Example: >
+<
+
 autograd#as_tensor()                                 *autograd#as_tensor()*
+    Example: >
+<
+
 autograd#zeros()                                         *autograd#zeros()*
+    Example: >
+<
+
 autograd#zeros_like()                               *autograd#zeros_like()*
+    Example: >
+<
+
 autograd#ones()                                           *autograd#ones()*
+    Example: >
+<
+
 autograd#ones_like()                                 *autograd#ones_like()*
+    Example: >
+<
+
 autograd#rand()                                           *autograd#rand()*
+    Example: >
+<
+
 autograd#uniform()                                     *autograd#uniform()*
+    Example: >
+<
+
 autograd#randn()                                         *autograd#randn()*
+    Example: >
+<
+
 autograd#normal()                                       *autograd#normal()*
+    Example: >
+<
+
 
 ------------------------------------------------------------------------------
 FUNCTION CONSTRUCTOR
 
 autograd#Function()                                   *autograd#Function()*
+    Example: >
+<
 
 ------------------------------------------------------------------------------
 DIFFERENTIABLE FUNCTIONS
 
 autograd#add()                                             *autograd#add()*
+    Example: >
+<
+
 autograd#mul()                                             *autograd#mul()*
+    Example: >
+<
+
 autograd#sub()                                             *autograd#sub()*
+    Example: >
+<
+
 autograd#div()                                             *autograd#div()*
+    Example: >
+<
+
 autograd#pow()                                             *autograd#pow()*
+    Example: >
+<
+
 autograd#sqrt()                                           *autograd#sqrt()*
+    Example: >
+<
+
 autograd#log()                                             *autograd#log()*
+    Example: >
+<
+
 autograd#exp()                                             *autograd#exp()*
+    Example: >
+<
+
 autograd#sin()                                             *autograd#sin()*
+    Example: >
+<
+
 autograd#cos()                                             *autograd#cos()*
+    Example: >
+<
+
 autograd#tanh()                                           *autograd#tanh()*
+    Example: >
+<
+
 autograd#abs()                                             *autograd#abs()*
+    Example: >
+<
+
 autograd#sign()                                           *autograd#sign()*
+    Example: >
+<
+
 autograd#sum()                                             *autograd#sum()*
+    Example: >
+<
+
 autograd#broadcast_to()                           *autograd#broadcast_to()*
+    Example: >
+<
+
 autograd#sum_to()                                       *autograd#sum_to()*
+    Example: >
+<
+
 autograd#max()                                             *autograd#max()*
+    Example: >
+<
+
 autograd#maximum()                                     *autograd#maximum()*
+    Example: >
+<
+
 autograd#transpose()                                 *autograd#transpose()*
+    Example: >
+<
+
 autograd#matmul()                                       *autograd#matmul()*
+    Example: >
+<
+
 autograd#reshape()                                     *autograd#reshape()*
+    Example: >
+<
+
 autograd#flatten()                                     *autograd#flatten()*
+    Example: >
+<
 
 ------------------------------------------------------------------------------
 MATHEMATICAL UTILITIES
 
 autograd#manual_seed()                             *autograd#manual_seed()*
+It sets the seed of the random functions provided by vim-autograd. By default, the
+seed is a random value returned by `srand()`.
+
+    Example: >
+        call autograd#manual_seed(42)
+<
+
 autograd#random()                                       *autograd#random()*
-autograd#fmax()                                           *autograd#fmax()*
+It returns a random scalar value between 0.0 and 1.0.
+
+    Example: >
+        let x = autograd#random()
+<
+
+autograd#fmax(list_obj)                                   *autograd#fmax()*
+It returns the maximum value of a list whose elements are float values.
+
+    Example: >
+        let x = autograd#fmax([2, 3, 4, 5, 6])
+<
+
 autograd#pi()                                               *autograd#pi()*
+It returns a scalar value that approximates pi.
+
+    Example: >
+        let x = autograd#pi()
+<
+
 autograd#grad()                                           *autograd#grad()*
+    Example: >
+<
+
 autograd#no_grad()                                     *autograd#no_grad()*
+    Example: >
+<
+
 autograd#elementwise()                             *autograd#elementwise()*
+    Example: >
+<
 
 ------------------------------------------------------------------------------
 DATA
 
 autograd#data#shuffle()                           *autograd#data#shuffle()*
+    Example: >
+<
 
 ------------------------------------------------------------------------------
 IMAGE
 autograd#image#open_b()                           *autograd#image#open_b()*
+    Example: >
+<
+
 autograd#image#save_b()                           *autograd#image#save_b()*
+    Example: >
+<
 
 ------------------------------------------------------------------------------
 UTILITIES
 
 autograd#utils#dump_graph()                   *autograd#utils#dump_graph()*
+    Example: >
+<
+
 autograd#utils#numerical_grad()           *autograd#utils#numerical_grad()*
+    Example: >
+<
+
 autograd#utils#gradcheck()                     *autograd#utils#gradcheck()*
+    Example: >
+<
 
 ==============================================================================
 LICENSE                                               *vim-autograd-license*
 
+MIT License Copyright (c) 2022 pit-ray
+
+The full text is available at https://github.com/pit-ray/vim-autograd/blob/main/LICENSE.
+
+
 ==============================================================================
 MAINTAINERS                                       *vim-autograd-maintainers*
 
+* pit-ray (author, maintainer): https://github.com/pit-ray
 
 
 vim:tw=78:ts=8:ft=help-norl:
