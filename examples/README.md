@@ -369,9 +369,7 @@ function! s:main() abort
     let pred = model.forward([data['test'][0][l:i]])
 
     " argmax
-    let class_idx = index(
-      \ pred.data,
-      \ max(map(pred.data, 'float2nr(v:val * 1000)')))
+    let class_idx = index(pred.data, autograd#max(pred).data[0])
     let accuracy += class_idx == data['test'][1][l:i][0]
   endfor
   call ng.end()
