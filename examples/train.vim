@@ -8,10 +8,6 @@ function! s:relu(x) abort
   return autograd#maximum(a:x, 0.0)
 endfunction
 
-function! s:sigmoid(x) abort
-  return autograd#div(1, autograd#exp(a:x.n()).a(1))
-endfunction
-
 function! s:softmax(x) abort
   let y = autograd#exp(a:x.s(autograd#max(a:x)))
   let s = autograd#sum(y, 1, 1)
