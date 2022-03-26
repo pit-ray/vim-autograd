@@ -571,88 +571,188 @@ Calculate square root of input. This is the same as autograd#pow(input, 0.5).
 
 ------------------------------------------------------------------------------
 autograd#log(input)                                         *autograd#log()*
+
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
+        let x = autograd#tensor(2.0)
+        let y = autograd#log(x)
 <
 
 ------------------------------------------------------------------------------
 autograd#exp(input)                                         *autograd#exp()*
+
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
+        let x = autograd#tensor(2.0)
+        let y = autograd#exp(x)
 <
 
 ------------------------------------------------------------------------------
 autograd#sin(theta)                                         *autograd#sin()*
+
+    Arguments:
+        theta (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
+        let x = autograd#tensor(autograd#pi() / 4)
+        let y = autograd#sin(x)
 <
 
 ------------------------------------------------------------------------------
 autograd#cos(theta)                                         *autograd#cos()*
+
+    Arguments:
+        theta (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
+        let x = autograd#tensor(autograd#pi() / 4)
+        let y = autograd#cos(x)
 <
 
 ------------------------------------------------------------------------------
-autograd#tanh(theta)                                       *autograd#tanh()*
+autograd#tanh(input)                                       *autograd#tanh()*
+
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
+        let x = autograd#tensor(2.0)
+        let y = autograd#tanh(x)
 <
 
 ------------------------------------------------------------------------------
 autograd#abs(input)                                         *autograd#abs()*
+
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
+        let x = autograd#tensor([-2.0, 1.0, -3.0])
+        let y = autograd#abs(x)
+        " y.data: [2.0, 1.0, 3.0]
 <
 
 ------------------------------------------------------------------------------
 autograd#sign(input)                                       *autograd#sign()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
     Example: >
+        let x = autograd#tensor([-2.0, 1.0, 0.0])
+        let y = autograd#abs(x)
+        " y.data: [-1.0, 1.0, 0.0]
 <
 
 ------------------------------------------------------------------------------
-autograd#sum(input)                                         *autograd#sum()*
+autograd#sum(input, axis=[], keepdims=0)                    *autograd#sum()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+        axis (`Number`, `List` of `Number`):
+
+        keepdims (bool):
+
+
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#broadcast_to(input, shape)                *autograd#broadcast_to()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
+        shape (`List` of `Number`):
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#sum_to(input, shape)                            *autograd#sum_to()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#max(input)                                         *autograd#max()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#maximum(input, other)                          *autograd#maximum()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor. It is also
+            broadcast if it is smaller than the shape of other.
+
+        other (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor. It is also
+            broadcast if it is smaller than the shape of input.
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#transpose(input)                             *autograd#transpose()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#matmul(input, other)                            *autograd#matmul()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
+        other (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#reshape(input, shape)                          *autograd#reshape()*
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
+        shape (`List` of `Number`):
     Example: >
 <
 
 ------------------------------------------------------------------------------
 autograd#flatten(input)                                 *autograd#flatten()*
+
+    Arguments:
+        input (Tensor, `List`, `Float`, `Number`):
+            This argument is automatically converted to a Tensor.
+
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#manual_seed()                              *autograd#manual_seed()*
+autograd#manual_seed(seed)                          *autograd#manual_seed()*
 It sets the seed of the random functions provided by vim-autograd. By default,
 the seed is a random value returned by `srand()`.
+
+    Arguments:
+        seed (`Number`):
+            It uses `srand(seed)`.
 
     Example: >
         call autograd#manual_seed(42)
@@ -687,7 +787,19 @@ It returns a scalar value that approximates pi.
 <
 
 ------------------------------------------------------------------------------
-autograd#grad()                                            *autograd#grad()*
+                                                           *autograd#grad()*
+autograd#grad(output, inputs, create_graph=0, retain_outgrad=0)
+
+    Arguments:
+        output (Tensor):
+
+        inputs (`List` of Tensor):
+
+        create_graph (bool):
+
+        retain_outgrad (bool):
+
+
     Example: >
 <
 
@@ -706,37 +818,61 @@ the returned handle.
 <
 
 ------------------------------------------------------------------------------
-autograd#elementwise()                              *autograd#elementwise()*
+autograd#elementwise(inputs, f, out={})             *autograd#elementwise()*
+    Arguments:
+        inputs:
+        f:
+        out:
+
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#data#shuffle()                            *autograd#data#shuffle()*
+autograd#data#shuffle(list_obj)                    *autograd#data#shuffle()*
+    Arguments:
+        list_obj:
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#image#open_b()                            *autograd#image#open_b()*
+autograd#image#open_b(filepath)                    *autograd#image#open_b()*
+    Argments:
+        filepath:
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#image#save_b()                            *autograd#image#save_b()*
+autograd#image#save_b(data, filepath)              *autograd#image#save_b()*
+    Arguments:
+        data:
+        filepath:
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#utils#dump_graph()                    *autograd#utils#dump_graph()*
+autograd#utils#dump_graph(last_node, filepath) *autograd#utils#dump_graph()*
+    Arguments:
+        last_node:
+        filepath: 
+
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#utils#numerical_grad()            *autograd#utils#numerical_grad()*
+autograd#utils#numerical_grad(f, input)    *autograd#utils#numerical_grad()*
+    Arguments:
+        f:
+        x:
     Example: >
 <
 
 ------------------------------------------------------------------------------
-autograd#utils#gradcheck()                      *autograd#utils#gradcheck()*
+autograd#utils#gradcheck(f, inputs)             *autograd#utils#gradcheck()*
+
+    Arguments:
+        f:
+        inputs:
+
     Example: >
 <
 
