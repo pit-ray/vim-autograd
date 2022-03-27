@@ -9,7 +9,7 @@ This library allows us to create next-generation plugins with numerical computat
 
 
 ## Installation
-If you are using plug.vim, can install as follows.
+If you are using [vim-plug](https://github.com/junegunn/vim-plug), can install as follows.
 
 ```vim
 Plug 'pit-ray/vim-autograd'

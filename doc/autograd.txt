@@ -17,7 +17,7 @@ The development site is located at https://github.com/pit-ray/vim-autograd
 
 ==============================================================================
 INSTALL                                               *vim-autograd-install*
-If you are using plug.vim, can install as follows. >
+If you are using vim-plug, can install as follows. >
 
     Plug 'pit-ray/vim-autograd'
 <
