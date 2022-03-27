@@ -189,10 +189,9 @@ A multi-layer network is then constructed using fully connected layers. However,
 
 [**examples/wine-classify.vim**](wine-classify.vim)
 ```vim
-function!  s:linear(x, W, ...) abort
-  let b = get(a:, 1, {})
+function!  s:linear(x, W, b={}) abort
   let t = autograd#matmul(a:x, a:W)
-  return empty(b) ? t : autograd#add(t, b)
+  return empty(a:b) ? t : autograd#add(t, a:b)
 endfunction
 
 function! s:relu(x) abort
