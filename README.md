@@ -3,7 +3,7 @@
 
 [![test](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml)  
 
-vim-autograd provides a foundation for automatic differentiation through the define-by-style algorithm such as Chainer or PyTorch. Since it is written completely in pure Vim script, there are no dependencies.
+vim-autograd provides a foundation for automatic differentiation through the Define-by-Run style algorithm such as Chainer or PyTorch. Since it is written completely in pure Vim script, there are no dependencies.
 
 This library allows us to create next-generation plugins with numerical computation of multidimensional arrays or deep learning using the gradient descent method.
 
