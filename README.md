@@ -56,6 +56,7 @@ The computational graph is automatically generated like the below.
 - [chainer/chainer](https://github.com/chainer/chainer)
 - [pytorch/pytorch](https://github.com/pytorch/pytorch)
 - [numpy/numpy](https://github.com/numpy/numpy)
+- [mattn/vim-brain](https://github.com/mattn/vim-brain)
 
 ## License
 This library is provided by **MIT License**.
