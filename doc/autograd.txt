@@ -1092,4 +1092,4 @@ MAINTAINERS                                       *vim-autograd-maintainers*
 * pit-ray (author, maintainer): https://github.com/pit-ray
 
 
-vim:tw=78:ts=8:ft=help-norl:
+vim:tw=78:ts=8:ft=help:norl:
