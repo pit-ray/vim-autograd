@@ -1,4 +1,4 @@
-autograd.vim  Automatic differentiation library written in pure vimscript.
+autograd.vim  Automatic differentiation library written in pure Vim script.
 
 ==============================================================================
 CONTENTS                                             *vim-autograd-contents*
@@ -10,6 +10,10 @@ CONTENTS                                             *vim-autograd-contents*
     6. Maintainers                                |vim-autograd-maintainers|
 ==============================================================================
 INTRODUCTION                                     *vim-autograd-introduction*
+
+Automatic differentiation library written in pure Vim script.
+
+The development site is located at https://github.com/pit-ray/vim-autograd
 
 ==============================================================================
 INSTALL                                               *vim-autograd-install*
