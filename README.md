@@ -52,7 +52,7 @@ The computational graph is automatically generated like the below.
 - [Classification using deep learning](examples/README.md#classification-using-deep-learning)
 
 ## References
-- [oreilly-japan/deep-learning-from-scratch-3](https://github.com/oreilly-japan/deep-learning-from-scratch-3).
+- [oreilly-japan/deep-learning-from-scratch-3](https://github.com/oreilly-japan/deep-learning-from-scratch-3)
 - [chainer/chainer](https://github.com/chainer/chainer)
 - [pytorch/pytorch](https://github.com/pytorch/pytorch)
 - [numpy/numpy](https://github.com/numpy/numpy)
