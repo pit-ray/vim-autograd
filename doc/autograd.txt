@@ -18,6 +18,7 @@ The development site is located at https://github.com/pit-ray/vim-autograd
 ==============================================================================
 INSTALL                                               *vim-autograd-install*
 If you are using plug.vim, can install as follows. >
+
     Plug 'pit-ray/vim-autograd'
 <
 ==============================================================================
@@ -53,11 +54,11 @@ Therefore, multiple calling without |Tensor.cleargrad()| method will add a new
 gradient into the accumulated gradient to perform double-backprop.
 
     Arguments:
-        create_graph (bool):
+        create_graph (`Bool`):
             Construct a computational graph for backpropergation to compute
             higher-order derivatives.
 
-        retain_outgrad (bool):
+        retain_outgrad (`Bool`):
             Holds the gradient of the variable output by each function.
             if y=f(x), y.grad holds the gradient of df/dy.
 
@@ -163,7 +164,7 @@ This method is the same as autograd#reshape(self, [s1, s2, ..., sn]) or
 autograd#reshape(self, shape).
 
     Arguments
-        shape (`List` or variadic):
+        shape (`List` of `Number`, variadic of `Number`):
             When only one argument is given, if its type is v:t_list, it is
             considered a shape; otherwise, a:000 is considered a shape.
 
@@ -439,14 +440,14 @@ Generate a normal distribution with arbitrary mean and standard deviation.
 
 ------------------------------------------------------------------------------
 autograd#Function(name)                                *autograd#Function()*
-It defines a differentiable function.
+Defines a differentiable function.
 At this time, you must also define functions with a dict suffix of
 {name}_forward() and {name}_backward() to the name specified in the name
 argument. Defining your own Function object is more efficient than using the
-|autograd#add()| and |autograd#mul()| provided as autograd API, since it does
-not generate intermediate objects in the computed graph. The
-|Function.forward()| and |Function.backward()| methods refer to the
-{name}_forward and {name}_backward methods, respectively.
+differentiable functions provided by vim-autograd, such as |autograd#add()| or
+|autograd#mul()|, since it does not retain intermediate objects in the
+computational graph. The |Function.forward()| and |Function.backward()| methods
+refer to the {name}_forward and {name}_backward methods, respectively.
 
     Arguments:
         name (`String`):
@@ -469,7 +470,7 @@ not generate intermediate objects in the computed graph. The
 
 ------------------------------------------------------------------------------
 autograd#add(input, other)                                  *autograd#add()*
-Add like input + other element-wise.
+Add like input + other element-wise. There is an alias |Tensor.a()|.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -487,7 +488,7 @@ Add like input + other element-wise.
 <
 ------------------------------------------------------------------------------
 autograd#mul(input, other)                                  *autograd#mul()*
-Multiply like input * other element-wise.
+Multiply like input * other element-wise. There is an alias |Tensor.m()|.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -505,7 +506,7 @@ Multiply like input * other element-wise.
 
 ------------------------------------------------------------------------------
 autograd#sub(input, other)                                  *autograd#sub()*
-Subtract like input - other element-wise.
+Subtract like input - other element-wise. There is an alias |Tensor.s()|.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -523,7 +524,7 @@ Subtract like input - other element-wise.
 
 ------------------------------------------------------------------------------
 autograd#div(input, other)                                  *autograd#div()*
-Divide like input / other element-wise.
+Divide like input / other element-wise. There is an alias |Tensor.d()|.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -542,6 +543,7 @@ Divide like input / other element-wise.
 ------------------------------------------------------------------------------
 autograd#pow(input, other)                                  *autograd#pow()*
 Compute element-wise power like input ** other (input ^ other).
+There is an alias |Tensor.p()|.
 
     Arguments:
         input (Tensor, `List`, `Float`, `Number`):
@@ -681,7 +683,7 @@ True (1), the summed axes are kept as the axis of element 1.
             [0, 1, 2]. By the way, a negative axis is converted to a
             reverse-index.
 
-        keepdims (bool):
+        keepdims (`Bool`):
             Whether the output Tensor retains the same dimension as
             input.shape.
 
@@ -896,11 +898,11 @@ Compute and return the gradient of the output with respect to the inputs.
             Tensor is returned. The .grad attribute of this inputs argument is
             not polluted.
 
-        create_graph (bool):
+        create_graph (`Bool`):
             Construct a computational graph for backpropergation to compute
             higher-order derivatives.
 
-        retain_outgrad (bool):
+        retain_outgrad (`Bool`):
             Holds the gradient of the variable output by each function.
             if y=f(x), y.grad holds the gradient of df/dy.
 
