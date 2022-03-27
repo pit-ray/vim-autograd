@@ -1,21 +1,23 @@
 # vim-autograd
+**Automatic differentiation library written in pure Vim script.**
+
 [![test](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml)  
-Define-by-Run style automatic differentiation library written in pure Vim Script.  
 
-It uses the same algorithm as Chainer and PyTorch to perform differentiation by generating a computational graph at runtime, making it easy to obtain derivative values even for complex expressions.
+vim-autograd provides a foundation for automatic differentiation through the define-by-style algorithm such as Chainer or PyTorch. Since it is written completely in pure Vim script, there are no dependencies.
 
-It is based on [DeZero](https://github.com/oreilly-japan/deep-learning-from-scratch-3).
+This library allows us to create next-generation plugins with numerical computation of multidimensional arrays or deep learning using the gradient descent method.
 
-**However it is still under development.**
 
-## ToDo
-- [x] support basic operations.
-- [x] support higher-order differentiation.
-- [x] support for basic mathematical functions (e.g. sin(), cos()) supported by Vim.
-- [x] support matrix.
-- [ ] add documentation.
+## Installation
+If you are using plug.vim, can install as follows.
+
+```vim
+Plug 'pit-ray/vim-autograd'
+```
 
 ## Usage
+
+A computational graph is constructed by applying the provided differentiable functions to a Tensor object, and the gradient is calculated by backpropagating from the output.
 
 ```vim
 function! s:f(x) abort
@@ -24,30 +26,36 @@ function! s:f(x) abort
   return y
 endfunction
 
-function! s:example1() abort
+function! s:example() abort
   let x = autograd#tensor(2.0)
-
   let y = s:f(x)
-  call y.backward()
 
-  " output: 56
+  call y.backward()
   echo x.grad.data
 endfunction
 
-call s:example1()
+call s:example()
 ```
 
+**Output**
 ```
-56
+[56.0]
 ```
 
-### Visualize Graph
-<img src="examples/images/example1.png" height=400 />
+The computational graph is automatically generated like the below.
 
-## Installation
-```vim
-Plug 'pit-ray/vim-autograd'
-```
+<img src="examples/images/example1.png" height=500 />
+
+## Examples
+- [Basic differentiation and computational graph visualization](examples/README.md#simplest-differentiation)
+- [Higher-order differentiation using double-backprop](examples/README.md#higher-order-differentiation)
+- [Classification using deep learning](examples/README.md#classification-using-deep-learning)
+
+## References
+- [oreilly-japan/DeZero](https://github.com/oreilly-japan/deep-learning-from-scratch-3).
+- [chainer/chainer](https://github.com/chainer/chainer)
+- [pytorch/pytorch](https://github.com/pytorch/pytorch)
+- [numpy/numpy](https://github.com/numpy/numpy)
 
 ## License
 This library is provided by **MIT License**.
