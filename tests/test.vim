@@ -25,7 +25,6 @@ function! s:test() abort
   let v:errors = []
 
   execute 'source' (s:project_root . '/autoload/autograd.vim')
-  execute 'source' (s:project_root . '/autoload/autograd/utils.vim')
 
   for l:suite in s:test_suites
     execute 'source' s:tests_root . '/' . l:suite . '.vim'

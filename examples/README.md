@@ -24,7 +24,7 @@ function! s:main() abort
 
   let x.name = 'x'
   let y.name = 'y'
-  call autograd#utils#dump_graph(y, '.autograd/example1.png')
+  call autograd#dump_graph(y, '.autograd/example1.png')
 endfunction
 
 call s:main()
@@ -344,7 +344,7 @@ function! s:main() abort
 
       let y = model.forward(x)
       let loss = s:cross_entropy_loss(y, t)
-      " call autograd#utils#dump_graph(loss, '.autograd/loss.png')
+      " call autograd#dump_graph(loss, '.autograd/loss.png')
 
       for param in model.params
         call param.cleargrad()

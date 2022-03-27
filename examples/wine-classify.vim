@@ -1,7 +1,6 @@
-function!  s:linear(x, W, ...) abort
-  let b = get(a:, 1, {})
+function!  s:linear(x, W, b={})abort
   let t = autograd#matmul(a:x, a:W)
-  return empty(b) ? t : autograd#add(t, b)
+  return empty(a:b) ? t : autograd#add(t, a:b)
 endfunction
 
 function! s:relu(x) abort
@@ -150,7 +149,7 @@ function! s:get_wine_dataset() abort
   let test_t = []
   let test_num_per_class = 10
   for l:i in range(3)
-    let class_split = autograd#utils#shuffle(
+    let class_split = autograd#shuffle(
       \ filter(deepcopy(dataset), 'v:val[0] == l:i + 1'))
 
     let train_split = class_split[:-test_num_per_class - 1]
@@ -201,7 +200,7 @@ function! s:main() abort
 
       let y = model.forward(x)
       let loss = s:cross_entropy_loss(y, t)
-      " call autograd#utils#dump_graph(loss, '.autograd/loss.png')
+      " call autograd#dump_graph(loss, '.autograd/loss.png')
 
       for param in model.params
         call param.cleargrad()

@@ -4,7 +4,7 @@ function! s:test_add() abort
   let x0 = autograd#uniform(0, 100, [2, 3])
   let x1 = autograd#uniform(0, 100, [2, 3])
 
-  call autograd#utils#gradcheck(F, [x0, x1])
+  call autograd#gradcheck(F, [x0, x1])
 endfunction
 
 function! s:test_mul() abort
@@ -13,11 +13,11 @@ function! s:test_mul() abort
   let x0 = autograd#uniform(0, 100, [2, 3])
   let x1 = autograd#uniform(0, 100, [2, 3])
 
-  call autograd#utils#gradcheck(F, [x0, x1])
+  call autograd#gradcheck(F, [x0, x1])
 
   let x2 = autograd#uniform(0, 100, [2, 3])
   let x3 = autograd#tensor([10])
-  call autograd#utils#gradcheck(F, [x2, x3])
+  call autograd#gradcheck(F, [x2, x3])
 endfunction
 
 function! s:test_sub() abort
@@ -26,7 +26,7 @@ function! s:test_sub() abort
   let x0 = autograd#uniform(0, 100, [2, 3])
   let x1 = autograd#uniform(0, 100, [2, 3])
 
-  call autograd#utils#gradcheck(F, [x0, x1])
+  call autograd#gradcheck(F, [x0, x1])
 endfunction
 
 function! s:test_div() abort
@@ -35,7 +35,7 @@ function! s:test_div() abort
   let x0 = autograd#uniform(0, 100, [2, 3])
   let x1 = autograd#uniform(1, 100, [2, 3])
 
-  call autograd#utils#gradcheck(F, [x0, x1])
+  call autograd#gradcheck(F, [x0, x1])
 endfunction
 
 function! s:test_pow() abort
@@ -44,7 +44,7 @@ function! s:test_pow() abort
   let x0 = autograd#uniform(0, 10, [2, 3])
   let x1 = autograd#uniform(0, 10, [2, 3])
 
-  call autograd#utils#gradcheck(F, [x0, x1])
+  call autograd#gradcheck(F, [x0, x1])
 endfunction
 
 

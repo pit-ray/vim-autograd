@@ -297,10 +297,10 @@ FUNCTIONS                                           *vim-autograd-functions*
         autograd#elementwise()                      |autograd#elementwise()|
 
     Utilities
-        autograd#utils#shuffle()                  |autograd#utils#shuffle()|
-        autograd#utils#dump_graph()            |autograd#utils#dump_graph()|
-        autograd#utils#numerical_grad()    |autograd#utils#numerical_grad()|
-        autograd#utils#gradcheck()              |autograd#utils#gradcheck()|
+        autograd#shuffle()                              |autograd#shuffle()|
+        autograd#dump_graph()                        |autograd#dump_graph()|
+        autograd#numerical_grad()                |autograd#numerical_grad()|
+        autograd#gradcheck()                          |autograd#gradcheck()|
 
 ------------------------------------------------------------------------------
 autograd#tensor(data)                                    *autograd#tensor()*
@@ -963,7 +963,7 @@ and is not differentiable.
         " y.data: [9, 9, 6, 10]
 <
 ------------------------------------------------------------------------------
-autograd#utils#shuffle(list_obj)                  *autograd#utils#shuffle()*
+autograd#shuffle(list_obj)                              *autograd#shuffle()*
 Sort the list randomly. It based on Fisher-Yates shuffle algorithm,
 
     Arguments:
@@ -971,11 +971,11 @@ Sort the list randomly. It based on Fisher-Yates shuffle algorithm,
             A list of `Float` or `Number`.
 
     Example: >
-        let x = autograd#utils#shuffle(range(10))
+        let x = autograd#shuffle(range(10))
         " x: [8, 5, 1, 6, 4, 7, 9, 3, 2, 0]
 <
 ------------------------------------------------------------------------------
-autograd#utils#dump_graph(last_node, filepath) *autograd#utils#dump_graph()*
+autograd#dump_graph(last_node, filepath)             *autograd#dump_graph()*
 Visualize computational graphs of last_node.
 If graphviz is installed, it generates images and DOT language source code,
 otherwise it generates only DOT language source code. If you want to give a
@@ -995,10 +995,10 @@ contributing to the graph.
         let y = autograd#pow(x, 3.0)
         let x.name = 'x'
         let y.name = 'y'
-        call autograd#utils#dump_graph(y, '.autograd/pow.png')
+        call autograd#dump_graph(y, '.autograd/pow.png')
 
 ------------------------------------------------------------------------------
-autograd#utils#numerical_grad(f, input)    *autograd#utils#numerical_grad()*
+autograd#numerical_grad(f, input)                *autograd#numerical_grad()*
 Compute and return the numerical derivative based on central difference.
 
     Arguments:
@@ -1013,10 +1013,10 @@ Compute and return the numerical derivative based on central difference.
         let a = autograd#tensor(2.0)
         let b = autograd#tensor(6.0)
         let F = {x -> autograd#mul(x, b)}
-        let grad = autograd#utils#numerical_grad(F, a)
+        let grad = autograd#numerical_grad(F, a)
 
 ------------------------------------------------------------------------------
-autograd#utils#gradcheck(f, inputs)             *autograd#utils#gradcheck()*
+autograd#gradcheck(f, inputs)                         *autograd#gradcheck()*
 It compares the result of the numerical differentiation with the gradient and
 exits successfully if all elements are very close, and emits an assert if they
 are different.
@@ -1032,7 +1032,7 @@ are different.
         let a = autograd#randn(2, 3)
         let b = autograd#randn(2, 3)
         let F = {xs -> autograd#mul(xs[0], xs[1])}
-        call autograd#utils#gradcheck(F, [a, b])
+        call autograd#gradcheck(F, [a, b])
 
 ==============================================================================
 LICENSE                                               *vim-autograd-license*

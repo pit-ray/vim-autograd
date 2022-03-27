@@ -1,31 +1,31 @@
 function! s:test_log() abort
   let F = {xs -> autograd#log(xs[0])}
   let x = autograd#uniform(0, 100, [2, 3])
-  call autograd#utils#gradcheck(F, [x])
+  call autograd#gradcheck(F, [x])
 endfunction
 
 function! s:test_exp() abort
   let F = {xs -> autograd#exp(xs[0])}
   let x = autograd#uniform(0, 10, [2, 3])
-  call autograd#utils#gradcheck(F, [x])
+  call autograd#gradcheck(F, [x])
 endfunction
 
 function! s:test_sin() abort
   let F = {xs -> autograd#sin(xs[0])}
   let x = autograd#uniform(0.0, autograd#pi() * 2, [2, 3])
-  call autograd#utils#gradcheck(F, [x])
+  call autograd#gradcheck(F, [x])
 endfunction
 
 function! s:test_cos() abort
   let F = {xs -> autograd#cos(xs[0])}
   let x = autograd#uniform(0.0, autograd#pi() * 2, [2, 3])
-  call autograd#utils#gradcheck(F, [x])
+  call autograd#gradcheck(F, [x])
 endfunction
 
 function! s:test_tanh() abort
   let F = {xs -> autograd#tanh(xs[0])}
   let x = autograd#rand(2, 3)
-  call autograd#utils#gradcheck(F, [x])
+  call autograd#gradcheck(F, [x])
 endfunction
 
 function! s:test_abs() abort

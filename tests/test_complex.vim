@@ -29,7 +29,7 @@ function! s:test_goldstein_price_gradcheck() abort
   let x = autograd#uniform(0, 10, [2, 3])
   let y = autograd#uniform(0, 10, [2, 3])
 
-  call autograd#utils#gradcheck(function('s:goldstein_price'), [x, y])
+  call autograd#gradcheck(function('s:goldstein_price'), [x, y])
 endfunction
 
 

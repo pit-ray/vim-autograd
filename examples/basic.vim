@@ -14,7 +14,7 @@ function! s:main() abort
 
   let x.name = 'x'
   let y.name = 'y'
-  call autograd#utils#dump_graph(y, '.autograd/example1.png')
+  call autograd#dump_graph(y, '.autograd/example1.png')
 endfunction
 
 call s:main()
