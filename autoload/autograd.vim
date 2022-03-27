@@ -141,6 +141,10 @@ function! s:Tensor.reshape(...) abort
   return s:reshape(self, l:shape)
 endfunction
 
+function! s:Tensor.flatten() abort
+  return s:flatten(self)
+endfunction
+
 function! s:Tensor.clone() abort
   return s:Tensor(copy(self.data), copy(self.shape))
 endfunction

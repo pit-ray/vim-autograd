@@ -397,3 +397,6 @@ When `s:main()` is executed, the loss is reduced as follows, and training is com
 ```
 accuracy: 0.966667
 ```
+
+The computational graph generated is shown below.  
+<img src="images/neural-net-graph.png" height=700 />

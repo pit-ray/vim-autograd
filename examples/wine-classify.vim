@@ -150,7 +150,7 @@ function! s:get_wine_dataset() abort
   let test_t = []
   let test_num_per_class = 10
   for l:i in range(3)
-    let class_split = autograd#data#shuffle(
+    let class_split = autograd#utils#shuffle(
       \ filter(deepcopy(dataset), 'v:val[0] == l:i + 1'))
 
     let train_split = class_split[:-test_num_per_class - 1]
