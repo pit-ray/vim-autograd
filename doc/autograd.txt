@@ -4,7 +4,7 @@ autograd.vim  Automatic differentiation library written in pure Vim script.
 CONTENTS                                             *vim-autograd-contents*
     1. Introduction                              |vim-autograd-introduction|
     2. Install                                        |vim-autograd-install|
-    3. CLASSES                                        |vim-autograd-classes|
+    3. Classes                                        |vim-autograd-classes|
     4. Functions                                    |vim-autograd-functions|
     5. License                                        |vim-autograd-license|
     6. Maintainers                                |vim-autograd-maintainers|
