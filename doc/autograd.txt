@@ -20,7 +20,6 @@ INSTALL                                               *vim-autograd-install*
 If you are using plug.vim, can install as follows. >
     Plug 'pit-ray/vim-autograd'
 <
-
 ==============================================================================
 CLASSES                                               *vim-autograd-classes*
     Tensor
@@ -67,7 +66,6 @@ gradient into the accumulated gradient to perform double-backprop.
         let y = autograd#mul(x, 3.0)
         call y.backward()
 <
-
 ------------------------------------------------------------------------------
 Tensor.cleargrad()                                      *Tensor.cleargrad()*
 Resets the retained gradient.
@@ -82,7 +80,6 @@ Resets the retained gradient.
         call gx1.backward()
         let gx2 = x.grad
 <
-
 ------------------------------------------------------------------------------
 Tensor.a(other)                                                 *Tensor.a()*
 This method is the same as autograd#add(self, other).
@@ -95,7 +92,6 @@ This method is the same as autograd#add(self, other).
         let x = autograd#tensor(2.0)
         let y = x.a(3.0)
 <
-
 ------------------------------------------------------------------------------
 Tensor.m(other)                                                 *Tensor.m()*
 This method is the same as autograd#mul(self, other).
@@ -108,7 +104,6 @@ This method is the same as autograd#mul(self, other).
         let x = autograd#tensor(2.0)
         let y = x.m(3.0)
 <
-
 ------------------------------------------------------------------------------
 Tensor.s(other)                                                 *Tensor.s()*
 This method is the same as autograd#sub(self, other).
@@ -120,7 +115,6 @@ This method is the same as autograd#sub(self, other).
     Example: >
         let x = autograd#tensor(2.0)
         let y = x.s(3.0)
-<
 
 ------------------------------------------------------------------------------
 Tensor.d(other)                                                 *Tensor.d()*
@@ -133,7 +127,6 @@ This method is the same as autograd#div(self, other).
     Example: >
         let x = autograd#tensor(2.0)
         let y = x.d(3.0)
-<
 
 ------------------------------------------------------------------------------
 Tensor.p(other)                                                 *Tenspr.p()*
@@ -146,7 +139,6 @@ This method is the same as autograd#pow(self, other).
     Example: >
         let x = autograd#tensor(2.0)
         let y = x.p(3.0)
-<
 
 ------------------------------------------------------------------------------
 Tensor.n()                                                      *Tensor.n()*
@@ -155,7 +147,6 @@ This method is the same as autograd#mul(self, -1.0).
     Example: >
         let x = autograd#tensor(2.0)
         let y = x.n()
-<
 
 ------------------------------------------------------------------------------
 Tensor.T()                                                      *Tensor.T()*
@@ -165,7 +156,6 @@ This method is the same as autograd#transpose(self).
         let x0 = autograd#randn(2, 3)
         let x1 = autograd#randn(2, 3)
         let y = autograd#matmul(x0, x1.T())
-<
 
 ------------------------------------------------------------------------------
 Tensor.reshape(s1, s2, ..., sn), Tensor.reshape(shape)    *Tensor.reshape()*
@@ -181,7 +171,6 @@ autograd#reshape(self, shape).
         let x0 = autograd#randn(2, 3)
         let x1 = x0.reshape(3, 2)
         let x2 = x0.reshape([3, 2])
-<
 
 ------------------------------------------------------------------------------
 Tensor.flatten()                                          *Tensor.flatten()*
@@ -191,7 +180,6 @@ This method is the same as autograd#flatten(self).
         let x = autograd#randn(2, 3)
         let y = x.flatten()
         " y.shape: [6]
-<
 
 ------------------------------------------------------------------------------
 Tensor.clone()                                              *Tensor.clone()*
@@ -202,7 +190,6 @@ tensor is completely independent of the original tensor.
         let x = autograd#tensor(2.0)
         let y = x.clone()
 <
-
 ------------------------------------------------------------------------------
 Tensor.detach()                                            *Tensor.detach()*
 It returns a new tensor detached from the current graph. However, returned
@@ -211,7 +198,6 @@ tensor shares the same data and shape attribute.
     Example: >
         let x = autograd#randn(2, 3).m(0.01).detach()
 <
-
 ------------------------------------------------------------------------------
 Function.apply(x1, x2, ..., xn)                           *Function.apply()*
 It constructs computed graphs after calling the forward method of a
@@ -259,7 +245,6 @@ NoGrad objects can be created with |autograd#no_grad()|.
         let y = autograd#pow(x, 4.0)
         call handle.end()
 <
-
 ==============================================================================
 FUNCTIONS                                           *vim-autograd-functions*
     Tensor Constructor
@@ -333,8 +318,6 @@ It creates a Tensor object based on the arguments.
         call assert_equal([2, 3], x.shape)
         call assert_equal([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], x.data)
 <
-
-
 ------------------------------------------------------------------------------
 autograd#as_tensor(data)                              *autograd#as_tensor()*
 Convert data to Tensor.
@@ -347,7 +330,6 @@ Convert data to Tensor.
     Example: >
         let x = autograd#as_tensor([2, 3, 4])
 <
-
 ------------------------------------------------------------------------------
 autograd#zeros(shape)                                     *autograd#zeros()*
 Create a Tensor filled with zero with the shape given by the argument.
@@ -359,7 +341,6 @@ Create a Tensor filled with zero with the shape given by the argument.
     Example: >
         let x = autograd#zeros([2, 3])
 <
-
 ------------------------------------------------------------------------------
 autograd#zeros_like(tensor)                          *autograd#zeros_like()*
 Create a Tensor filled with zero in the same shape as the argument.
@@ -384,7 +365,6 @@ Create a Tensor filled with one with the shape given by the argument.
     Example: >
         let x = autograd#ones([2, 3])
 <
-
 ------------------------------------------------------------------------------
 autograd#ones_like(tensor)                            *autograd#ones_like()*
 Create a Tensor filled with one in the same shape as the argument.
@@ -396,7 +376,6 @@ Create a Tensor filled with one in the same shape as the argument.
     Example: >
         let x = autograd#randn(2, 3)
         let y = autograd#ones_like(x)
-<
 
 ------------------------------------------------------------------------------
 autograd#rand(s1, s2, ..., sn)                             *autograd#rand()*
@@ -409,12 +388,24 @@ sampled from a uniform distribution as elements.
 
     Example: >
         let x = autograd#rand(2, 3)
-<
 
 ------------------------------------------------------------------------------
 autograd#uniform(low=0.0, high=1.0, shape=[1])          *autograd#uniform()*
+Create a Tensor of the same shape as the argument with the random value
+sampled from a uniform distribution between low and high range as elements.
+
+    Arguments:
+        low (`Float`):
+            Lower boundary of the output interval.
+
+        high (`Float`):
+            Upper boundary of the output interval.
+
+        shape (`List` of `Number`)
+            The output tensor has the same as this shape.
+
     Example: >
-<
+        let x = autograd#uniform(0.0, 5.0, [2, 3])
 
 ------------------------------------------------------------------------------
 autograd#randn(s1, s2, ..., sn)                           *autograd#randn()*
@@ -428,7 +419,6 @@ distribution with mean 0.0 and standard deviation 1.0 as elements.
 
     Example: >
         let x = autograd#randn(2, 3)
-<
 
 ------------------------------------------------------------------------------
 autograd#normal(mean=0.0, std=1.0, shape=[1])            *autograd#normal()*
@@ -446,7 +436,6 @@ Generate a normal distribution with arbitrary mean and standard deviation.
 
     Example: >
         let x = autograd#normal(0.0, 2.0, [2, 3])
-<
 
 ------------------------------------------------------------------------------
 autograd#Function(name)                                *autograd#Function()*
@@ -477,7 +466,6 @@ not generate intermediate objects in the computed graph. The
           let l:mask = autograd#elementwise([l:x], {a -> a > 0.0})
           return [autograd#mul(a:gys[0], l:mask)]
         endfunction
-<
 
 ------------------------------------------------------------------------------
 autograd#add(input, other)                                  *autograd#add()*
@@ -497,7 +485,6 @@ Add like input + other element-wise.
         let y = autograd#add(x, 4.0)
         " y.data: [6.0]
 <
-
 ------------------------------------------------------------------------------
 autograd#mul(input, other)                                  *autograd#mul()*
 Multiply like input * other element-wise.
@@ -515,7 +502,6 @@ Multiply like input * other element-wise.
         let x = autograd#tensor(4.0)
         let y = autograd#mul(x, 2.0)
         " y.data: [8.0]
-<
 
 ------------------------------------------------------------------------------
 autograd#sub(input, other)                                  *autograd#sub()*
@@ -534,7 +520,6 @@ Subtract like input - other element-wise.
         let x = autograd#tensor(5.0)
         let y = autograd#sub(x, 2.0)
         " y.data: [3.0]
-<
 
 ------------------------------------------------------------------------------
 autograd#div(input, other)                                  *autograd#div()*
@@ -553,7 +538,6 @@ Divide like input / other element-wise.
         let x = autograd#tensor(6.0)
         let y = autograd#div(x, 2.0)
         " y.data: [3.0]
-<
 
 ------------------------------------------------------------------------------
 autograd#pow(input, other)                                  *autograd#pow()*
@@ -573,7 +557,6 @@ Compute element-wise power like input ** other (input ^ other).
         let y = autograd#pow(x, 5.0)
         " y.data: [32.0]
 <
-
 ------------------------------------------------------------------------------
 autograd#sqrt(input)                                       *autograd#sqrt()*
 Calculate element-wise square root of input. This is the same as
@@ -588,7 +571,6 @@ autograd#pow(input, 0.5).
         let y = autograd#sqrt(x)
         " y.data: [1.414214]
 <
-
 ------------------------------------------------------------------------------
 autograd#log(input)                                         *autograd#log()*
 Calculate the natural logarithm log that the inverse of the exponential
@@ -603,7 +585,6 @@ function in base e.
         let y = autograd#log(x)
         " y.data: 0.693147
 <
-
 ------------------------------------------------------------------------------
 autograd#exp(input)                                         *autograd#exp()*
 Calculate the exponential.
@@ -616,7 +597,6 @@ Calculate the exponential.
         let x = autograd#tensor(2.0)
         let y = autograd#exp(x)
         " y.data: 7.389056
-<
 
 ------------------------------------------------------------------------------
 autograd#sin(theta)                                         *autograd#sin()*
@@ -630,7 +610,6 @@ Calculate element-wise sine.
         let x = autograd#tensor(autograd#pi() / 4)
         let y = autograd#sin(x)
         " y.data: 0.707107
-<
 
 ------------------------------------------------------------------------------
 autograd#cos(theta)                                         *autograd#cos()*
@@ -645,7 +624,6 @@ Calculate element-wise cosine.
         let y = autograd#cos(x)
         " y.data: 0.707107
 <
-
 ------------------------------------------------------------------------------
 autograd#tanh(input)                                       *autograd#tanh()*
 Calculate element-wise hyperbolic tangent.
@@ -659,7 +637,6 @@ Calculate element-wise hyperbolic tangent.
         let y = autograd#tanh(x)
         " y.data: 0.964028
 <
-
 ------------------------------------------------------------------------------
 autograd#abs(input)                                         *autograd#abs()*
 Calculate element-wise absolute value.
@@ -673,7 +650,6 @@ Calculate element-wise absolute value.
         let y = autograd#abs(x)
         " y.data: [2.0, 1.0, 3.0]
 <
-
 ------------------------------------------------------------------------------
 autograd#sign(input)                                       *autograd#sign()*
 Compute element-wise sign function. sign(x) returns 1 when x is greater than
@@ -688,7 +664,6 @@ Compute element-wise sign function. sign(x) returns 1 when x is greater than
         let y = autograd#sign(x)
         " y.data: [-1.0, 1.0, 0.0]
 <
-
 ------------------------------------------------------------------------------
 autograd#sum(input, axis=[], keepdims=0)                    *autograd#sum()*
 It returns the sum of all elements or elements in given axis in input.
@@ -715,7 +690,6 @@ True (1), the summed axes are kept as the axis of element 1.
         let y = autograd#sum(x, 1)
         " y.data: [6.0, 15.0]
 <
-
 ------------------------------------------------------------------------------
 autograd#broadcast_to(input, shape)                *autograd#broadcast_to()*
 Broadcasts input Tensor to the shape. However, the axis to be broadcast must
@@ -734,7 +708,6 @@ cannot be broadcast to [4, 2, 2].
         let x = autograd#randn(3, 5, 1)
         let y = autograd#broadcast_to(x, [3, 5, 7])
 <
-
 ------------------------------------------------------------------------------
 autograd#sum_to(input, shape)                            *autograd#sum_to()*
 For backpropagation of broadcast_to, sum input so that it becomes shape. This
@@ -770,7 +743,6 @@ function is used to backpropagate of implicit broadcasts in
             \ ]
         endfunction
 <
-
 ------------------------------------------------------------------------------
 autograd#max(input)                                         *autograd#max()*
 Returns the maximum value of all elements of input.
@@ -783,7 +755,6 @@ Returns the maximum value of all elements of input.
         let x = autograd#tensor([[2.0, 5.6], [2.5, -2.0]])
         let y = autograd#max(x)
         " y.data: [5.6]
-<
 
 ------------------------------------------------------------------------------
 autograd#maximum(input, other)                          *autograd#maximum()*
@@ -803,7 +774,6 @@ Returns the element-wise maximum of input and other.
         let b = autograd#tensor([3, 0, 4])
         let y = autograd#maximum(a, b)
         " y.data: [3.0, 2.0, 4.0]
-<
 
 ------------------------------------------------------------------------------
 autograd#transpose(input)                             *autograd#transpose()*
@@ -817,7 +787,6 @@ Returns a new Tensor transposed. There is an alias |Tensor.T()|.
         let x = autograd#randn(2, 3)
         let y = autograd#transpose(x)
         " y.shape: [3, 2]
-<
 
 ------------------------------------------------------------------------------
 autograd#matmul(input, other)                            *autograd#matmul()*
@@ -843,7 +812,6 @@ Matrix product of two tensors.
         let W = autograd#randn(3, 2)
         let y = autograd#matmul(x, W)
 <
-
 ------------------------------------------------------------------------------
 autograd#reshape(input, shape)                          *autograd#reshape()*
 Returns Tensor of different shapes that share the same data as input.
@@ -861,7 +829,6 @@ There is an alias |Tensor.reshape()|.
         let x = autograd#randn(2, 3)
         let y = autograd#reshape(x, [3, 2])
 <
-
 ------------------------------------------------------------------------------
 autograd#flatten(input)                                 *autograd#flatten()*
 Reshape Tensor to one-dimensional.
@@ -877,7 +844,6 @@ There is an alias |Tensor.flatten()|.
         let y = autograd#flatten(x)
         " y.shape: [6]
 <
-
 ------------------------------------------------------------------------------
 autograd#manual_seed(seed)                          *autograd#manual_seed()*
 It sets the seed of the random functions provided by vim-autograd. By default,
@@ -889,7 +855,6 @@ the seed is a random value returned by `srand()`.
 
     Example: >
         call autograd#manual_seed(42)
-<
 
 ------------------------------------------------------------------------------
 autograd#random()                                        *autograd#random()*
@@ -898,7 +863,6 @@ It returns a random scalar value between 0.0 and 1.0.
     Example: >
         let x = autograd#random()
 <
-
 ------------------------------------------------------------------------------
 autograd#fmax(list_obj)                                    *autograd#fmax()*
 It returns the maximum value of a `List` whose elements are `Float` values.
@@ -910,7 +874,6 @@ It returns the maximum value of a `List` whose elements are `Float` values.
     Example: >
         let x = autograd#fmax([2, 3, 4, 5, 6])
 <
-
 ------------------------------------------------------------------------------
 autograd#pi()                                                *autograd#pi()*
 It returns a scalar value that approximates pi.
@@ -918,7 +881,6 @@ It returns a scalar value that approximates pi.
     Example: >
         let x = autograd#pi()
 <
-
 ------------------------------------------------------------------------------
                                                            *autograd#grad()*
 autograd#grad(output, inputs, create_graph=0, retain_outgrad=0)
@@ -952,7 +914,6 @@ Compute and return the gradient of the output with respect to the inputs.
         " gx1.data: [80.0]
         " gx2.data: [160.0]
 <
-
 ------------------------------------------------------------------------------
 autograd#no_grad()                                      *autograd#no_grad()*
 Switch to a mode that does not create computed graphs to save computation cost
@@ -965,7 +926,6 @@ the returned handle.
         let handle = autograd#no_grad()
         let y = autograd#pow(x, 4.0)
         call handle.end()
-<
 
 ------------------------------------------------------------------------------
 autograd#elementwise(inputs, f, out={})             *autograd#elementwise()*
@@ -1000,7 +960,6 @@ and is not differentiable.
         " y.shape: [2, 2]
         " y.data: [9, 9, 6, 10]
 <
-
 ------------------------------------------------------------------------------
 autograd#utils#shuffle(list_obj)                  *autograd#utils#shuffle()*
 Sort the list randomly. It based on Fisher-Yates shuffle algorithm,
@@ -1013,7 +972,6 @@ Sort the list randomly. It based on Fisher-Yates shuffle algorithm,
         let x = autograd#utils#shuffle(range(10))
         " x: [8, 5, 1, 6, 4, 7, 9, 3, 2, 0]
 <
-
 ------------------------------------------------------------------------------
 autograd#utils#dump_graph(last_node, filepath) *autograd#utils#dump_graph()*
 Visualize computational graphs of last_node.
@@ -1036,7 +994,6 @@ contributing to the graph.
         let x.name = 'x'
         let y.name = 'y'
         call autograd#utils#dump_graph(y, '.autograd/pow.png')
-<
 
 ------------------------------------------------------------------------------
 autograd#utils#numerical_grad(f, input)    *autograd#utils#numerical_grad()*
@@ -1055,7 +1012,6 @@ Compute and return the numerical derivative based on central difference.
         let b = autograd#tensor(6.0)
         let F = {x -> autograd#mul(x, b)}
         let grad = autograd#utils#numerical_grad(F, a)
-<
 
 ------------------------------------------------------------------------------
 autograd#utils#gradcheck(f, inputs)             *autograd#utils#gradcheck()*
@@ -1075,7 +1031,6 @@ are different.
         let b = autograd#randn(2, 3)
         let F = {xs -> autograd#mul(xs[0], xs[1])}
         call autograd#utils#gradcheck(F, [a, b])
-<
 
 ==============================================================================
 LICENSE                                               *vim-autograd-license*
@@ -1084,7 +1039,6 @@ MIT License Copyright (c) 2022 pit-ray
 
 The full text is available at
 https://github.com/pit-ray/vim-autograd/blob/main/LICENSE.
-
 
 ==============================================================================
 MAINTAINERS                                       *vim-autograd-maintainers*
