@@ -185,7 +185,7 @@ function! s:main() abort
 
   let logs = []
   for epoch in range(max_epoch)
-    let indexes = autograd#data#shuffle(range(train_data_num))
+    let indexes = autograd#shuffle(range(train_data_num))
     let epoch_loss = 0
     for l:i in range(each_iteration)
       let x = []
