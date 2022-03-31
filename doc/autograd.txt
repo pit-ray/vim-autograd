@@ -24,6 +24,9 @@ If you are using vim-plug, can install as follows. >
 ==============================================================================
 CLASSES                                               *vim-autograd-classes*
     Tensor
+        Tensor.data                                            |Tensor.data|
+        Tensor.grad                                            |Tensor.grad|
+        Tensor.shape                                          |Tensor.shape|
         Tensor.backward()                                |Tensor.backward()|
         Tensor.cleargrad()                              |Tensor.cleargrad()|
         Tensor.a()                                              |Tensor.a()|
@@ -46,6 +49,50 @@ CLASSES                                               *vim-autograd-classes*
     NoGrad
         NoGrad.end()                                          |NoGrad.end()|
 
+------------------------------------------------------------------------------
+Tensor.data                                                     *Tensor.data*
+It is the raw data retained as a 1-dimensional `List` of `Float`.
+If you create a multidimensional array using |autograd#tensor()| or
+|autograd#zeros()|, etc., everything will be converted to flatten vector.
+
+    Example: >
+        let x = autograd#tensor([[1, 2], [3, 4]])
+        " x.data: [1.0, 2.0, 3.0, 4.0]
+
+------------------------------------------------------------------------------
+Tensor.grad                                                     *Tensor.grad*
+It holds the gradient of that variable for a given output. Since it is a
+nested Tensor object, you can access the raw data as a |Tensor.data| attribute.
+However, the this attribute of each Tensor object on a computed graph that
+has not called |Tensor.backward()| or |autograd#grad()| is empty.
+
+    Example: >
+        let x = autograd#tensor(2.0)
+        " empty(x.grad): True
+
+        let y = autograd#mul(x, 5.0)
+        call y.backward()
+        " empty(x.grad): False
+        " x.grad.data  : [5.0]
+<
+------------------------------------------------------------------------------
+Tensor.shape                                                   *Tensor.shape*
+It has a list of `Number` representing the shape of the array.
+Since vim-autograd does not have the concept of a scalar, a tensor created by
+|autograd#tensor()| given a scalar value is interpreted as a vector of size 1.
+There is no .size or .dim attribute, and the `len()` function is used as follows.
+
+    Example: >
+        let a = autograd#tensor(2.0)
+        " x.shape: [1]
+        " x.data : [2.0]
+
+        let b = autograd#tensor([[1, 2], [3, 4]])
+        " b.shape     : [2, 2]
+        " b.data      : [1.0, 2.0, 3.0, 4.0]
+        " len(b.shape): 2   (dimension)
+        " len(b.data) : 4   (size)
+<
 ------------------------------------------------------------------------------
 Tensor.backward(create_graph=0, retain_outgrad=0)         *Tensor.backward()*
 Backpropagate from the current tensor to obtain the gradient.
