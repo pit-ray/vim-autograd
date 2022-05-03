@@ -185,12 +185,12 @@ function! s:main() abort
 
   let logs = []
   for epoch in range(max_epoch)
-    let indexes = autograd#shuffle(range(train_data_num))
+    let indices = autograd#shuffle(range(train_data_num))
     let epoch_loss = 0
     for l:i in range(each_iteration)
       let x = []
       let t = []
-      for index in indexes[l:i * batch_size:(l:i + 1) * batch_size - 1]
+      for index in indices[l:i * batch_size:(l:i + 1) * batch_size - 1]
         call add(x, data['train'][0][index])
 
         let onehot = repeat([0.0], data['nclass'])
