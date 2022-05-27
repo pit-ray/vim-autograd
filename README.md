@@ -51,6 +51,9 @@ The computational graph is automatically generated like the below.
 - [Higher-order differentiation using double-backprop](examples/README.md#higher-order-differentiation)
 - [Classification using deep learning](examples/README.md#classification-using-deep-learning)
 
+## Related posts
+- https://zenn.dev/pitray/articles/482e89ddff329c
+
 ## References
 - [oreilly-japan/deep-learning-from-scratch-3](https://github.com/oreilly-japan/deep-learning-from-scratch-3)
 - [chainer/chainer](https://github.com/chainer/chainer)
