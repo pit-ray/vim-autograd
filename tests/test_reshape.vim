@@ -216,4 +216,3 @@ function! test_reshape#run_test_suite() abort
   call s:test_transpose()
   call s:test_reshape()
 endfunction
-  call s:test_sum()
