@@ -1,19 +1,20 @@
 vim9script
 scriptencoding utf-8
 
-
-final ENABLE_BACKPROP = 1
-
-final LAST_TENSOR_ID = 0
-final LAST_FUNC_ID = v:numbermax / 2 - 1
-
 const PI = acos(-1.0)
+final ENABLE_BACKPROP = 1
+final LAST_FUNC_ID = v:numbermax / 2 - 1
+final LAST_TENSOR_ID = 0
 
 def Error(msg: string): void
   echohl ErrorMsg
   echomsg 'autograd: ' .. msg
   echohl None
 enddef
+
+# ====================
+#    Tensor class
+# ====================
 
 function Tensor_cleargrad() dict abort
   let self.grad = {}
@@ -24,7 +25,7 @@ function Tensor_set_parent_fn(parent_fn) dict abort
   let self.gen = self.parent_fn.gen + 1
 endfunction
 
-def CompareTensorGeneration(lhs: any, rhs: any): number
+def CompareTensorGeneration(lhs: dict<any>, rhs: dict<any>): number
   if lhs['gen'] == rhs['gen']
     return 0
   elseif lhs['gen'] < rhs['gen']
@@ -147,9 +148,7 @@ function Tensor_detach() dict abort
   return Tensor(self.data, self.shape)
 endfunction
 
-# Tensor class
-
-def Tensor(data: any, shape: any): any
+def Tensor(data: list<float>, shape: list<number>): dict<any>
   var tensor = {
     'name': '',
     'id': 0,
@@ -181,3 +180,34 @@ def Tensor(data: any, shape: any): any
   var LAST_TENSOR_ID = tensor.id
   return tensor
 enddef
+
+def IsTensor(x: any): bool
+  if type(x) != v:t_dict
+    return false
+  endif
+  return has_key(x, 'data') && has_key(a:x, 'grad')
+enddef
+
+def Vector(size: number, init_val: float = 0.0): list<float>
+  var vec = repeat([0.0], size)
+  return init_val != 0.0 ? map(vec, init_val) : vec
+enddef
+
+def ShapeToSize(shape: list<number>): number
+  var size = 1
+  for x in shape
+    var size *= x
+  endfor
+  return size
+enddef
+
+def GetMatrixShape(array: any): list<number>
+  var shape = []
+  var sub_array = copy(array)
+  while type(sub_array) == v:t_list
+    add(shape, len(sub_array))
+    var sub_array = sub_array[0]
+  endwhile
+  return shape
+enddef
+
