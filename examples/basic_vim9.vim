@@ -17,8 +17,8 @@ def Main(): void
 
   echo x.grad.data
 
-  var x.name = 'x'
-  var y.name = 'y'
+  x.name = 'x'
+  y.name = 'y'
   ag.DumpGraph(y, '.autograd/example1.png')
 enddef
 

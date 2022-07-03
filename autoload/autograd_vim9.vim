@@ -2,9 +2,9 @@ vim9script
 scriptencoding utf-8
 
 const PI = acos(-1.0)
-final ENABLE_BACKPROP = 1
-final LAST_FUNC_ID = v:numbermax / 2 - 1
-final LAST_TENSOR_ID = 0
+var ENABLE_BACKPROP = true
+var LAST_FUNC_ID = v:numbermax / 2 - 1
+var LAST_TENSOR_ID = 0
 
 def Error(msg: string): void
   echohl ErrorMsg
@@ -169,11 +169,11 @@ def CreateTensor(data: list<float>, shape: list<number>): dict<any>
     'detach': function('Tensor_detach')
   }
 
-  var tensor.data = data
-  var tensor.shape = shape
+  tensor.data = data
+  tensor.shape = shape
 
-  var tensor.id = last_tensor_id + 1
-  var LAST_TENSOR_ID = tensor.id
+  tensor.id = LAST_TENSOR_ID + 1
+  LAST_TENSOR_ID = tensor.id
   return tensor
 enddef
 
@@ -181,18 +181,17 @@ def IsTensor(x: any): bool
   if type(x) != v:t_dict
     return false
   endif
-  return has_key(x, 'data') && has_key(a:x, 'grad')
+  return has_key(x, 'data') && has_key(x, 'grad')
 enddef
 
 def CreateVector(size: number, init_val: float = 0.0): list<float>
-  var vec = repeat([0.0], size)
-  return init_val != 0.0 ? map(vec, init_val) : vec
+  return repeat([init_val], size)
 enddef
 
 def ShapeToSize(shape: list<number>): number
   var size = 1
   for x in shape
-    var size *= x
+    size *= x
   endfor
   return size
 enddef
@@ -202,12 +201,12 @@ def GetMatrixShape(array: any): list<number>
   var sub_array = copy(array)
   while type(sub_array) == v:t_list
     add(shape, len(sub_array))
-    var sub_array = sub_array[0]
+    sub_array = sub_array[0]
   endwhile
   return shape
 enddef
 
-def AsList(data: any): list<float>
+def AsList(data: any): list<any>
   return type(data) != v:t_list ? [data] : data
 enddef
 
@@ -215,9 +214,9 @@ export def Tensor(rawdata: any): dict<any>
   var data = AsList(deepcopy(rawdata))
 
   var shape = GetMatrixShape(data)
-  var data = flatten(data)
+  data = flattennew(data)
 
-  map(data, 'v:val * 1.0')  " int to float
+  map(data, 'v:val * 1.0')  # int to float
 
   if len(data) != ShapeToSize(shape)
     Error('Invalid matrix shape.')
@@ -226,7 +225,7 @@ export def Tensor(rawdata: any): dict<any>
 enddef
 
 export def AsTensor(data: any): dict<any>
-  return IsTensor(data) ? data : CreateTensor(data)
+  return IsTensor(data) ? data : Tensor(data)
 enddef
 
 export def Zeros(shape: list<number>): dict<any>
@@ -255,11 +254,11 @@ enddef
 
 final random_seed = srand()
 export def ManualSeed(seed: number): void
-  var random_seed = srand(seed)
+  random_seed = srand(seed)
 enddef
 
 export def Random(): float
-  " it returns random value from 0.0 to 1.0.
+  # it returns random value from 0.0 to 1.0.
   return rand(random_seed) / 4294967295.0
 enddef
 
@@ -268,10 +267,10 @@ def BoxMuller(u1: float, u2: float): float
 enddef
 
 export def Rand(...shape: list<number>): dict<any>
-  var shape = len(shape) > 0 ? shape : [1]
-  var size = ShapeToSize(shape)
+  var _shape = len(shape) > 0 ? shape : [1]
+  var size = ShapeToSize(_shape)
   var data = map(repeat([0.0], size), 'Random()')
-  return CreateTensor(data, shape)
+  return CreateTensor(data, _shape)
 enddef
 
 export def Uniform(
@@ -286,12 +285,12 @@ export def Uniform(
 enddef
 
 export def Randn(...shape: list<number>): dict<any>
-  var shape = len(shape) > 0 ? shape : [1]
-  var size = ShapeToSize(shape)
+  var _shape = len(shape) > 0 ? shape : [1]
+  var size = ShapeToSize(_shape)
   var data = map(
     repeat([0.0], size),
     'BoxMuller(Random(), Random())')
-  return CreateTensor(l:data, l:shape)
+  return CreateTensor(data, _shape)
 enddef
 
 export def Normal(
@@ -314,7 +313,7 @@ function Function_apply(...) dict abort
 
   let l:outputs = self.forward(l:inputs)
 
-  if ENABLE_BACKPROP
+  if s:ENABLE_BACKPROP
     let l:gens = []
     for l:input in l:inputs
       call add(l:gens, l:input.gen)
@@ -339,10 +338,11 @@ export def CreateFunction(name: string): dict<any>
     'inputs': [],
     'outputs': [],
     'gen': 0,
+    'apply': function('Function_apply'),
     'forward': function(name .. 'Forward'),
     'backward': function(name .. 'Backward')
   }
-  var LAST_FUNC_ID = fn.id
+  LAST_FUNC_ID = fn.id
   return fn
 enddef
 
@@ -352,12 +352,8 @@ export def Add(x0: any, x1: any): dict<any>
   return CreateFunction('Add').apply(x0, x1)
 enddef
 
-def AddCore(x0: float, x1: float): float
-  return x0 + x1
-enddef
-
 function AddForward(xs) dict abort
-  return [Elementwise(a:xs, function('Add_'))]
+  return [Elementwise(a:xs, {a, b -> a + b})]
 endfunction
 
 function AddBackward(gys) dict abort
@@ -378,12 +374,8 @@ export def Mul(x0: any, x1: any): dict<any>
   return CreateFunction('Mul').apply(x0, x1)
 enddef
 
-def MulCore(x0: float, x1: float): float
-  return x0 * x1
-enddef
-
 function MulForward(xs) dict abort
-  return [Elementwise(a:xs, function('Mul_'))]
+  return [Elementwise(a:xs, {a, b -> a * b})]
 endfunction
 
 function MulBackward(gys) dict abort
@@ -404,12 +396,8 @@ export def Sub(x0: any, x1: any): dict<any>
   return CreateFunction('Sub').apply(x0, x1)
 enddef
 
-def SubCore(x0: float, x1: float): float
-  return x0 - x1
-enddef
-
 function SubForward(xs) dict abort
-  return [Elementwise(a:xs, function('Sub_'))]
+  return [Elementwise(a:xs, {a, b -> a - b})]
 endfunction
 
 function SubBackward(gys) dict abort
@@ -617,7 +605,7 @@ def RightSideSumTo(x: dict<any>, shape: list<number>): dict<any>
   for i in range(y_size)
     var base = block_size * i
     for j in range(block_size)
-      var yd[i] += xd[base + j]
+      yd[i] += xd[base + j]
     endfor
   endfor
   return y
@@ -635,8 +623,8 @@ export def Sum(
   map(axis, 'v:val >= x_dim ? x_dim - 1 : v:val')
 
   var fn = CreateFunction('Sum')
-  var fn['axis'] = uniq(sort(axis))
-  var fn['keepdims'] = keepdims
+  fn['axis'] = uniq(sort(axis))
+  fn['keepdims'] = keepdims
   return fn.apply(x)
 enddef
 
@@ -695,7 +683,7 @@ def LeftValidShape(shape: list<number>): list<number>
     if shape[i] != 1
       break
     endif
-    var valid_size -= 1
+    valid_size -= 1
   endfor
 
   if valid_size == 0
@@ -713,7 +701,7 @@ def RightValidShape(shape: list<number>): list<number>
     if shape[i] != 1
       break
     endif
-    var valid_size -= 1
+    valid_size -= 1
   endfor
 
   if valid_size == 0
@@ -731,7 +719,7 @@ export def BroadcastTo(x: any, shape: list<number>): dict<any>
   endif
 
   var fn = CreateFunction('BroadcastTo')
-  var fn['shape'] = shape
+  fn['shape'] = shape
   return fn.apply(x)
 enddef
 
@@ -781,7 +769,7 @@ export def SumTo(x: any, shape: list<number>): dict<any>
     return xt
   endif
   var fn = CreateFunction('SumTo')
-  var fn['shape'] = shape
+  fn['shape'] = shape
   return l:fn.apply(x)
 enddef
 
@@ -885,7 +873,7 @@ def TransposeCore(x: dict<any>): dict<any>
   for i in range(n_i)
     var buf = i * n_j
     for j in n_j_range
-      var out_data[j * n_i + i] = xd[buf + j]
+      out_data[j * n_i + i] = xd[buf + j]
     endfor
   endfor
 
@@ -995,7 +983,7 @@ export def Reshape(x: any, shape: list<number>): dict<any>
   endif
 
   var fn = CreateFunction('Reshape')
-  var fn['shape'] = shape
+  fn['shape'] = shape
   return fn.apply(x)
 enddef
 
@@ -1040,7 +1028,7 @@ export def Grad(
   var grads = []
   for i in range(len(xs))
     add(grads, xs[i].grad)
-    var xs[i].grad = old_grads[i]
+    xs[i].grad = old_grads[i]
   endfor
 
   return len(grads) > 1 ? grads : grads[0]
@@ -1054,16 +1042,16 @@ endfunction
 export def NoGrad(): dict<any>
   var ng = {
     'state': ENABLE_BACKPROP,
-    'end', function('NoGrad_end'),
+    'end': function('NoGrad_end')
   }
-  var ENABLE_BACKPROP = 0
+  ENABLE_BACKPROP = false
   return ng
 enddef
 
 
 export def Elementwise(
     inputs: list<dict<any>>,
-    fn: func(...list<float>): float,
+    Fn: any,
     out: dict<any> = {}): dict<any>
   if len(inputs) == 1
     var x = inputs[0]
@@ -1072,7 +1060,7 @@ export def Elementwise(
     var td = tensor.data
     var xd = x.data
     for i in range(len(xd))
-      var td[i] = fn(xd[i])
+      td[i] = Fn(xd[i])
     endfor
     return tensor
   endif
@@ -1086,14 +1074,14 @@ export def Elementwise(
   var x1_dim = len(x1.shape)
 
   if x0_dim > x1_dim
-    var x1 = BroadcastTo(x1, x0.shape)
+    x1 = BroadcastTo(x1, x0.shape)
   elseif x0_dim < x1_dim
-    var x0 = BroadcastTo(x0, x1.shape)
+    x0 = BroadcastTo(x0, x1.shape)
   else
     if len(x0.data) > len(x1.data)
-      var x1 = BroadcastTo(x1, x0.shape)
+      x1 = BroadcastTo(x1, x0.shape)
     else
-      var x0 = BroadcastTo(x0, x1.shape)
+      x0 = BroadcastTo(x0, x1.shape)
     endif
   endif
   ng.end()
@@ -1105,7 +1093,7 @@ export def Elementwise(
   var x1d = x1.data
 
   for i in range(len(tensor.data))
-    var td[i] = fn(x0d[i], x1d[i])
+    td[i] = Fn(x0d[i], x1d[i])
   endfor
   return tensor
 enddef
@@ -1117,8 +1105,8 @@ export def Shuffle(data: list<any>): list<any>
   for i in range(len(data) - 1, 1, -1)
     var j = float2nr((i + 0.99999) * Random())
     var tmp = data[i]
-    var data[i] = data[j]
-    var data[j] = tmp
+    data[i] = data[j]
+    data[j] = tmp
   endfor
   return data
 enddef
@@ -1144,10 +1132,10 @@ def DumpTensorAsDotlang(tensor: dict<any>): string
   return tensor.id .. '[label="' .. tensor.name .. '", color=lightblue, style=filled]'
 enddef
 
-def DumpFuncAsDotlang(fn: dict<any>): string
+def DumpFuncAsDotlang(fn: dict<any>): list<string>
   var fndef = fn.id .. '[label="' .. fn.name .. '", color=gray, style=filled, shape=box]'
 
-  var links = []
+  var links = [fndef]
   for x in fn.inputs
     add(links, x.id .. ' -> ' .. fn.id)
   endfor
@@ -1156,7 +1144,7 @@ def DumpFuncAsDotlang(fn: dict<any>): string
     add(links, fn.id .. ' -> ' .. y.id)
   endfor
 
-  return [fndef, links]
+  return links
 enddef
 
 export def DumpGraph(last_node: dict<any>, filepath: string): void
@@ -1165,12 +1153,12 @@ export def DumpGraph(last_node: dict<any>, filepath: string): void
   var funcs = [last_node.parent_fn]
 
   while len(funcs) > 0
-    var func = remove(funcs, -1)
-    var fn_dot = DumpFuncAsDotlang(func)
+    var fn = remove(funcs, -1)
+    var fn_dot = DumpFuncAsDotlang(fn)
     add(defs, fn_dot[0])
-    var links += fn_dot[1]
+    links += fn_dot[1 : ]
 
-    for x in func.inputs
+    for x in fn.inputs
       add(defs, DumpTensorAsDotlang(x))
 
       if !empty(x.parent_fn)
@@ -1179,18 +1167,18 @@ export def DumpGraph(last_node: dict<any>, filepath: string): void
     endfor
   endwhile
 
-  var links = uniq(sort(links))
+  links = uniq(sort(links))
 
   var texts = ['digraph g {'] + defs + links + ['}']
 
   var paths = split(filepath, '/\|\')
   var path = paths[-1]
   if len(paths) > 1
-    var dir = join(paths[:-2], '/')
+    var dir = join(paths[ : -2], '/')
     if !isdirectory(dir)
       mkdir(dir, 'p')
     endif
-    var path = dir .. '/' .. path
+    path = dir .. '/' .. path
   endif
 
   writefile(texts, path .. '.dot')
@@ -1198,7 +1186,7 @@ export def DumpGraph(last_node: dict<any>, filepath: string): void
   if executable('dot')
     echo system(
       'dot ' .. path .. '.dot' ..
-      ' -T ' .. split(path , '\.')[-1] ..
+      ' -T ' .. split(path, '\.')[-1] ..
       ' -o ' .. path
     )
   endif
