@@ -135,13 +135,13 @@ function Tensor_flatten() dict abort
 endfunction
 
 function Tensor_clone() dict abort
-  return Tensor(copy(self.data), copy(self.shape))
+  return CreateTensor(copy(self.data), copy(self.shape))
 endfunction
 
 # It returns a new tensor detached from the current graph.
 # However, returned tensor shares the same data and shape attribute.
 function Tensor_detach() dict abort
-  return Tensor(self.data, self.shape)
+  return CreateTensor(self.data, self.shape)
 endfunction
 
 def CreateTensor(data: list<float>, shape: list<number>): dict<any>
