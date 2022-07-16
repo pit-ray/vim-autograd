@@ -62,14 +62,7 @@ def MLP(in_size: number, ...layer_sizes: list<number>): any
   return mlp
 enddef
 
-let s:SGD = {
-  \ 'vs': {},
-  \ 'momentum': 0.9,
-  \ 'lr': 0.01,
-  \ 'weight_decay': 0.0,
-  \ 'grad_clip': -1
-  \ }
-function! s:SGD.each_update(param) abort
+function! SGD_each_update(param) dict abort
   if self.weight_decay != 0
     call autograd#elementwise(
       \ [a:param.grad, a:param],
@@ -92,7 +85,7 @@ function! s:SGD.each_update(param) abort
   return autograd#elementwise([a:param, v], {a, b -> a + b}, a:param)
 endfunction
 
-function! s:SGD.step(params) abort
+function! SGD_step(params) dict abort
   " gradients clipping
   if self.grad_clip > 0
     let grads_norm = 0.0
@@ -111,14 +104,22 @@ function! s:SGD.step(params) abort
   call map(a:params, 'self.each_update(v:val)')
 endfunction
 
-function! s:SGD(...) abort
-  let l:optim = deepcopy(s:SGD)
-  let l:optim.lr = get(a:, 1, 0.01)
-  let l:optim.momentum = get(a:, 2, 0.9)
-  let l:optim.weight_decay = get(a:, 3, 0.0)
-  let l:optim.grad_clip = get(a:, 4, -1)
-  return l:optim
-endfunction
+def SGD(
+    lr: float = 0.01,
+    momentum: float = 0.9,
+    weight_decay: float = 0.0,
+    grad_clip: float = -1): any
+  var optim = {
+    'vs': {},
+    'momentum': momentum,
+    'lr': lr,
+    'weight_decay': weight_decay,
+    'grad_clip': grad_clip,
+    'each_update': function('SGD_each_update'),
+    'step': function('SGD_step')
+  }
+  return optim
+enddef
 
 function! s:get_wine_dataset() abort
   " This refers to the following public toy dataset.
