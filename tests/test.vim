@@ -9,7 +9,7 @@ let s:project_root = s:tests_root . '/..'
 
 let s:test_suite_runner = '#run_test_suite'
 
-let s:test_result_file = 'test_result.log'
+let s:test_result_file = 'test.log'
 
 let s:test_suites = [
   \ 'test_basic',
