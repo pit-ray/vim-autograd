@@ -119,8 +119,10 @@ export var ShapeToSize = matrix.ShapeToSize
 export var AsList = matrix.AsList
 export var CreateVector = matrix.CreateVector
 export var GetMatrixShape = matrix.GetMatrixShape
-export var SqueezeRightShape = matrix.SqueezeRightSHape
-export var SqueezeLeftShape = matrix.SqueezeLeftSHape
+export var SqueezeRightShape = matrix.SqueezeRightShape
+export var SqueezeLeftShape = matrix.SqueezeLeftShape
 
 import './utils/system.vim'
 export var Error = system.Error
+
+defcompile
