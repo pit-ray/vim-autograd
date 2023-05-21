@@ -56,7 +56,6 @@ let s:SGD = {
   \ 'momentum': 0.9,
   \ 'lr': 0.01,
   \ 'weight_decay': 0.0,
-  \ 'grad_clip': -1
   \ }
 function! s:SGD.each_update(param) abort
   if self.weight_decay != 0
@@ -82,21 +81,6 @@ function! s:SGD.each_update(param) abort
 endfunction
 
 function! s:SGD.step(params) abort
-  " gradients clipping
-  if self.grad_clip > 0
-    let grads_norm = 0.0
-    for param in a:params
-      let grads_norm = autograd#sum(param.grad.p(2))
-    endfor
-    let grads_norm = autograd#sqrt(grads_norm).data[0]
-    let clip_rate = self.grad_clip / (grads_norm + 0.000001)
-    if clip_rate < 1.0
-      for param in a:params
-        let param.grad = param.grad.m(clip_rate)
-      endfor
-    endif
-  endif
-
   call map(a:params, 'self.each_update(v:val)')
 endfunction
 
@@ -105,7 +89,6 @@ function! s:SGD(...) abort
   let l:optim.lr = get(a:, 1, 0.01)
   let l:optim.momentum = get(a:, 2, 0.9)
   let l:optim.weight_decay = get(a:, 3, 0.0)
-  let l:optim.grad_clip = get(a:, 4, -1)
   return l:optim
 endfunction
 
@@ -175,10 +158,10 @@ function! s:main() abort
 
   let data = s:get_wine_dataset()
   let model = s:MLP(data['insize'], 100, data['nclass'])
-  let optimizer = s:SGD(0.1, 0.9, 0.0001, 10.0)
+  let optimizer = s:SGD(0.1, 0.9, 0.0001)
 
   " train
-  let max_epoch = 50
+  let max_epoch = 14
   let batch_size = 16
   let train_data_num = len(data['train'][0])
   let each_iteration = float2nr(ceil(1.0 * train_data_num / batch_size))
@@ -233,4 +216,10 @@ function! s:main() abort
   echomsg 'accuracy: ' . accuracy / len(data['test'][1])
 endfunction
 
-call s:main()
+function! s:benchmark()
+  let l:start = reltime()
+  call s:main()
+  echomsg str2float(reltimestr(reltime(l:start)))
+endfunction
+
+call s:benchmark()

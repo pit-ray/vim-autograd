@@ -1,20 +1,31 @@
-function! s:f(x) abort
-  " y = x^5 - 2x^3
-  let y = autograd#sub(a:x.p(5), a:x.p(3).m(2))
+vim9script
+
+import '../autoload/autograd.vim' as ag
+
+var Tensor = ag.Tensor
+
+
+def F(x: Tensor): Tensor
+  # y = x^5 - 2x^3
+  var y = ag.Sub(
+    ag.Pow(x, 5),
+    ag.Mul(2, ag.Pow(x, 3)))
   return y
-endfunction
+enddef
 
-function! s:main() abort
-  let x = autograd#tensor(2.0)
 
-  let y = s:f(x)
-  call y.backward()
+def Main()
+  var x = ag.Tensor.new(2.0)
 
-  echo x.grad.data
+  var y = F(x)
+  ag.Backward(y)
 
-  let x.name = 'x'
-  let y.name = 'y'
-  call autograd#dump_graph(y, '.autograd/example1.png')
-endfunction
+  var x_grad: ag.Tensor = x.grad
+  echo x_grad.data
 
-call s:main()
+  x.SetName('x')
+  y.SetName('y')
+  ag.DumpGraph(y, '.autograd/example1.png')
+enddef
+
+Main()
