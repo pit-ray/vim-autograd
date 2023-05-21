@@ -1,39 +1,49 @@
-function! s:goldstein_price(inputs) abort
-  let x = autograd#as_tensor(a:inputs[0])
-  let y = autograd#as_tensor(a:inputs[1])
+vim9script
 
-  let t1 = x.a(y.a(1)).p(2)
-  let t2 = x.m(-14).a(19).a(x.p(2).m(3)).s(y.m(14)).a(x.m(y.m(6))).a(y.p(2).m(3))
-  let t3 = x.m(2).s(y.m(3)).p(2)
-  let t4 = x.m(-32).a(18).a(x.p(2).m(12)).a(y.m(48)).s(x.m(y.m(36))).a(y.p(2).m(27))
+import '../autoload/autograd.vim' as ag
 
-  return autograd#mul(t1.m(t2).a(1), t3.m(t4).a(30))
-endfunction
-
-function! s:test_goldstein_price() abort
-  let x = autograd#tensor(1.0)
-  call assert_equal([1.0], x.data)
-
-  let y = autograd#tensor(1.0)
-  call assert_equal([1.0], y.data)
-
-  let z = s:goldstein_price([x, y])
-  call assert_equal([1876.0], z.data)
-
-  call z.backward()
-  call assert_equal([-5376.0], x.grad.data)
-  call assert_equal([8064.0], y.grad.data)
-endfunction
-
-function! s:test_goldstein_price_gradcheck() abort
-  let x = autograd#uniform(0, 10, [2, 3])
-  let y = autograd#uniform(0, 10, [2, 3])
-
-  call autograd#gradcheck(function('s:goldstein_price'), [x, y])
-endfunction
+var Tensor = ag.Tensor
 
 
-function! test_complex#run_test_suite() abort
-  call s:test_goldstein_price()
-  call s:test_goldstein_price_gradcheck()
-endfunction
+def GoldsteinPrice(inputs: list<any>): Tensor
+  var x = ag.AsTensor(inputs[0])
+  var y = ag.AsTensor(inputs[1])
+
+  var t1 = ag.Pow(ag.Add(x, ag.Add(y, 1)), 2)
+  var t2 = ag.Add(ag.Add(ag.Sub(ag.Add(ag.Add(ag.Mul(-14, x), 19), ag.Mul(3, ag.Pow(x, 2))), ag.Mul(14, y)), ag.Mul(x, ag.Mul(6, y))), ag.Mul(3, ag.Pow(y, 2)))
+  var t3 = ag.Pow(ag.Sub(ag.Mul(x, 2), ag.Mul(3, y)), 2)
+  var t4 = ag.Add(ag.Sub(ag.Add(ag.Add(ag.Add(ag.Mul(-32, x), 18), ag.Mul(12, ag.Pow(x, 2))), ag.Mul(48, y)), ag.Mul(x, ag.Mul(36, y))), ag.Mul(27, ag.Pow(y, 2)))
+  return ag.Mul(ag.Add(ag.Mul(t1, t2), 1), ag.Add(ag.Mul(t3, t4), 30))
+enddef
+
+
+def TestGoldsteinPrice()
+  var x = ag.Tensor.new(1.0)
+  assert_equal([1.0], x.data)
+
+  var y = ag.Tensor.new(1.0)
+  assert_equal([1.0], y.data)
+
+  var z = GoldsteinPrice([x, y])
+  assert_equal([1876.0], z.data)
+
+  ag.Backward(z)
+  var xg: Tensor = x.grad
+  var yg: Tensor = y.grad
+  assert_equal([-5376.0], xg.data)
+  assert_equal([8064.0], yg.data)
+enddef
+
+
+def TestGoldsteinPriceGradcheck()
+  var x = ag.Uniform(0.0, 10.0, [2, 3])
+  var y = ag.Uniform(0.0, 10.0, [2, 3])
+
+  ag.GradCheck(GoldsteinPrice, [x, y])
+enddef
+
+
+export def RunTestSuite()
+  TestGoldsteinPrice()
+  TestGoldsteinPriceGradcheck()
+enddef

@@ -1,13 +1,18 @@
-function! s:test_nograd() abort
-  let x = autograd#tensor(4.0)
+vim9script
 
-  let l:ng = autograd#no_grad()
-  let y = x.m(2).p(3).s(10)
-  call l:ng.end()
+import '../autoload/autograd.vim' as ag
 
-  call assert_equal([502.0], y.data)
-endfunction
 
-function! test_util#run_test_suite() abort
-  call s:test_nograd()
-endfunction
+def TestNoGrad()
+  var x = ag.Tensor.new(4.0)
+
+  ag.NoGrad(() => {
+    var y = ag.Sub(ag.Pow(ag.Mul(2, x), 3), 10)
+    assert_equal([502.0], y.data)
+  })
+enddef
+
+
+export def RunTestSuite()
+  TestNoGrad()
+enddef

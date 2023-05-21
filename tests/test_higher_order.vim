@@ -1,28 +1,36 @@
-function! s:test_higer_order_differential() abort
-  let x = autograd#tensor(2.0)
-  call assert_equal([2.0], x.data)
+vim9script
 
-  " y = x^5 - 3*x^3 + 1
-  let y = x.p(5).s(x.p(3).m(3)).a(1)
-  call assert_equal([9.0], y.data)
+import '../autoload/autograd.vim' as ag
 
-  let gx = autograd#grad(y, x, 1)
-  call assert_equal([44.0], gx.data)
-
-  let gx = autograd#grad(gx, x, 1)
-  call assert_equal([124.0], gx.data)
-
-  let gx = autograd#grad(gx, x, 1)
-  call assert_equal([222.0], gx.data)
-
-  let gx = autograd#grad(gx, x, 1)
-  call assert_equal([240.0], gx.data)
-
-  call gx.backward(1)
-  call assert_equal([120.0], x.grad.data)
-endfunction
+var Tensor = ag.Tensor
 
 
-function! test_higher_order#run_test_suite() abort
-  call s:test_higer_order_differential()
-endfunction
+def TestHigerOrderDifferential()
+  var x = Tensor.new(2.0)
+  assert_equal([2.0], x.data)
+
+  # y = x^5 - 3*x^3 + 1
+  var y: Tensor = ag.Add(ag.Sub(ag.Pow(x, 5), ag.Mul(ag.Pow(x, 3), 3)), 1)
+  assert_equal([9.0], y.data)
+
+  var gx: Tensor = ag.Grad(y, x, true)
+  assert_equal([44.0], gx.data)
+
+  gx = ag.Grad(gx, x, true)
+  assert_equal([124.0], gx.data)
+
+  gx = ag.Grad(gx, x, true)
+  assert_equal([222.0], gx.data)
+
+  gx = ag.Grad(gx, x, true)
+  assert_equal([240.0], gx.data)
+
+  ag.Backward(gx, true)
+  gx = x.grad
+  assert_equal([120.0], gx.data)
+enddef
+
+
+export def RunTestSuite()
+  TestHigerOrderDifferential()
+enddef

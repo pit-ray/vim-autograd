@@ -1,121 +1,138 @@
-function! s:test_cleargrad() abort
-  let x = autograd#tensor(2.0)
-  let y = x.m(60)
-  call y.backward()
-  call assert_equal([60.0], x.grad.data)
+vim9script
 
-  call x.cleargrad()
-  call assert_true(empty(x.grad))
-endfunction
+import '../autoload/autograd.vim' as ag
 
-function! s:test_clone() abort
-  let a = autograd#tensor(2.0)
-  let b = a.clone()
-  call assert_notequal(a.id, b.id)
-endfunction
+var Tensor = ag.Tensor
 
-function! s:test_tensor() abort
-  let a = autograd#tensor([[1, 2, 3], [4, 5, 6]])
-  call assert_equal([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], a.data)
-  call assert_equal([2, 3], a.shape)
 
-  let b = autograd#tensor(5)
-  call assert_equal([5.0], b.data)
-  call assert_equal([1], b.shape)
-endfunction
+def TestClearGrad()
+  var x = Tensor.new(2.0)
+  var y = ag.Mul(60, x)
 
-function! s:test_as_tensor() abort
-  let a = autograd#tensor([2, 4, 5])
-  let ar = autograd#as_tensor(a)
-  call assert_equal(a.id, ar.id)
-  call assert_true(a is ar)
+  ag.Backward(y)
+  var gx: Tensor = x.grad
+  assert_equal([60.0], gx.data)
 
-  let b = [5, 6, 7]
-  let br = autograd#as_tensor(b)
-  call assert_equal([5.0, 6.0, 7.0], br.data)
-  call assert_equal([3], br.shape)
+  x.ClearGrad()
+  assert_true(x.grad == null)
+enddef
 
-  let c = 5
-  let cr = autograd#as_tensor(c)
-  call assert_equal([5.0], cr.data)
-  call assert_equal([1], cr.shape)
-endfunction
 
-function! s:test_zeros() abort
-  let d1 = float2nr(autograd#uniform(1, 10).data[0])
-  let d2 = float2nr(autograd#uniform(1, 10).data[0])
-  let d3 = float2nr(autograd#uniform(1, 10).data[0])
+def TestClone()
+  var a = Tensor.new(2.0)
+  var b = ag.Clone(a)
+  assert_notequal(a.id, b.id)
+enddef
 
-  let x = autograd#zeros([d1, d2, d3])
-  call assert_equal([d1, d2, d3], x.shape)
-  for l:i in range(len(x.data))
-    call assert_equal(0.0, x.data[l:i])
+
+def TestTensor()
+  var a = Tensor.new([[1, 2, 3], [4, 5, 6]])
+  assert_equal([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], a.data)
+  assert_equal([2, 3], a.shape)
+
+  var b = Tensor.new(5)
+  assert_equal([5.0], b.data)
+  assert_equal([1], b.shape)
+enddef
+
+
+def TestAsTensor()
+  var a = Tensor.new([2, 4, 5])
+  var ar = ag.AsTensor(a)
+  assert_equal(a.id, ar.id)
+  assert_true(a is ar)
+
+  var b = [5, 6, 7]
+  var br = ag.AsTensor(b)
+  assert_equal([5.0, 6.0, 7.0], br.data)
+  assert_equal([3], br.shape)
+
+  var c = 5
+  var cr = ag.AsTensor(c)
+  assert_equal([5.0], cr.data)
+  assert_equal([1], cr.shape)
+enddef
+
+
+
+def TestZeros()
+  var d1 = float2nr(ag.Uniform(1.0, 10.0).data[0])
+  var d2 = float2nr(ag.Uniform(1.0, 10.0).data[0])
+  var d3 = float2nr(ag.Uniform(1.0, 10.0).data[0])
+
+  var x = ag.Zeros([d1, d2, d3])
+  assert_equal([d1, d2, d3], x.shape)
+  for i in range(len(x.data))
+    assert_equal(0.0, x.data[i])
   endfor
-endfunction
+enddef
 
-function! s:test_zeros_like() abort
-  let a = autograd#tensor(
-    \ [
-        \ [1, 5, 6],
-        \ [2, 6, 4],
-        \ [2, 6, 7]
-    \ ])
 
-  let b = autograd#zeros_like(a)
-  call assert_notequal(a.id, b.id)
-  call assert_equal(a.shape, b.shape)
-  for l:i in range(len(b.data))
-    call assert_equal(0.0, b.data[l:i])
+def TestZerosLike()
+  var a = Tensor.new([
+      [1, 5, 6],
+      [2, 6, 4],
+      [2, 6, 7]
+    ])
+
+  var b = ag.ZerosLike(a)
+  assert_notequal(a.id, b.id)
+  assert_equal(a.shape, b.shape)
+  for i in range(len(b.data))
+    assert_equal(0.0, b.data[i])
   endfor
-endfunction
+enddef
 
-function! s:test_ones() abort
-  let d1 = float2nr(autograd#uniform(1, 10).data[0])
-  let d2 = float2nr(autograd#uniform(1, 10).data[0])
-  let d3 = float2nr(autograd#uniform(1, 10).data[0])
 
-  let x = autograd#ones([d1, d2, d3])
-  call assert_equal([d1, d2, d3], x.shape)
-  for l:i in range(len(x.data))
-    call assert_equal(1.0, x.data[l:i])
+def TestOnes()
+  var d1 = float2nr(ag.Uniform(1.0, 10.0).data[0])
+  var d2 = float2nr(ag.Uniform(1.0, 10.0).data[0])
+  var d3 = float2nr(ag.Uniform(1.0, 10.0).data[0])
+
+  var x = ag.Ones([d1, d2, d3])
+  assert_equal([d1, d2, d3], x.shape)
+  for i in range(len(x.data))
+    assert_equal(1.0, x.data[i])
   endfor
-endfunction
+enddef
 
-function! s:test_ones_like() abort
-  let a = autograd#tensor(
-    \ [
-        \ [2, 2, 6],
-        \ [0, 3, 4],
-        \ [7, 0, 5]
-    \ ])
 
-  let b = autograd#ones_like(a)
-  call assert_notequal(a.id, b.id)
-  call assert_equal(a.shape, b.shape)
-  for l:i in range(len(b.data))
-    call assert_equal(1.0, b.data[l:i])
+def TestOnesLike()
+  var a = Tensor.new([
+      [2, 2, 6],
+      [0, 3, 4],
+      [7, 0, 5]
+    ])
+
+  var b = ag.OnesLike(a)
+  assert_notequal(a.id, b.id)
+  assert_equal(a.shape, b.shape)
+  for i in range(len(b.data))
+    assert_equal(1.0, b.data[i])
   endfor
-endfunction
-
-function! s:test_generation() abort
-  let x = autograd#tensor(2.0)
-
-  let y = autograd#add(x.p(2).p(2), x.p(2).p(2))
-  call y.backward()
-
-  call assert_equal([32.0], y.data)
-  call assert_equal([64.0], x.grad.data)
-endfunction
+enddef
 
 
-function! test_tensor#run_test_suite() abort
-  call s:test_cleargrad()
-  call s:test_clone()
-  call s:test_tensor()
-  call s:test_as_tensor()
-  call s:test_zeros()
-  call s:test_zeros_like()
-  call s:test_ones()
-  call s:test_ones_like()
-  call s:test_generation()
-endfunction
+def TestGeneration()
+  var x = Tensor.new(2.0)
+
+  var y = ag.Add(ag.Pow(ag.Pow(x, 2), 2), ag.Pow(ag.Pow(x, 2), 2))
+  ag.Backward(y)
+  var gx: Tensor = x.grad
+
+  assert_equal([32.0], y.data)
+  assert_equal([64.0], gx.data)
+enddef
+
+
+export def RunTestSuite()
+  TestClearGrad()
+  TestClone()
+  TestTensor()
+  TestAsTensor()
+  TestZeros()
+  TestZerosLike()
+  TestOnes()
+  TestOnesLike()
+  TestGeneration()
+enddef
