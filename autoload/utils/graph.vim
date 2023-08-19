@@ -21,7 +21,7 @@ def DumpTensorAsDotlang(x: tensor.Tensor): string
 enddef
 
 
-def DumpFuncAsDotlang(fn: function.HasCallableNode): list<string>
+def DumpFuncAsDotlang(fn: function.Function): list<string>
   var label = fn.name
   var fndef =
     fn.id .. '[label="' .. label ..
@@ -43,7 +43,7 @@ enddef
 export def DumpGraph(last_node: tensor.Tensor, filepath: string)
   var defs: list<string> = [DumpTensorAsDotlang(last_node)]
   var links = []
-  var funcs: list<function.HasCallableNode> = []
+  var funcs: list<function.Function> = []
 
   if last_node.parent_fn != null
     funcs->add(last_node.parent_fn)

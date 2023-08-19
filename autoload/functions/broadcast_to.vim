@@ -9,16 +9,9 @@ import '../utils/system.vim'
 import './sum_to.vim'
 
 var Function = function.Function
-var HasCallableNode = function.HasCallableNode
 
 
-class BroadcastToFunction extends Function implements HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
+class BroadcastToFunction extends Function
   this._shape: list<number>
 
   def new()

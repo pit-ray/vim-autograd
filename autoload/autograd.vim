@@ -17,7 +17,6 @@ export var Backward = backward.Backward
 
 import './core/function.vim'
 export var Function = function.Function
-export var HasCallableNode = function.HasCallableNode
 
 import './core/callfunc.vim'
 export var CallFunction = callfunc.CallFunction

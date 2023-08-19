@@ -18,15 +18,15 @@ export class Tensor
 
   this.shape: list<number>
 
-  def new(data: any, shape: list<number> = null_list)
+  def new(raw_data: any, shape: list<number> = null_list)
     if shape == null_list
-      var _data = matrix.AsList(deepcopy(data))
+      var _data = matrix.AsList(deepcopy(raw_data))
       this.shape = matrix.GetMatrixShape(_data)
 
       this.data = map(
         flattennew(_data), (_, v): float => v * 1.0)
     else
-      this.data = data
+      this.data = raw_data
       this.shape = shape
     endif
 

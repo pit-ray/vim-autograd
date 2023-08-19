@@ -15,7 +15,7 @@ enddef
 
 
 export def CallFunction(
-    fn: function.HasCallableNode,
+    fn: function.Function,
     ...any_inputs: list<any>): any
   var inputs: list<tensor.Tensor>
   for input in any_inputs

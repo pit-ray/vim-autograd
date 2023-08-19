@@ -22,7 +22,7 @@ export def Backward(
   var funcs = [x.parent_fn]
   var scanned_fnids = []
   while len(funcs) > 0
-    var fn: function.HasCallableNode = funcs->remove(-1)
+    var fn: function.Function = funcs->remove(-1)
 
     var gys: list<tensor.Tensor> = []
     for output in fn.outputs
@@ -49,7 +49,7 @@ export def Backward(
 
         # It prevents multiple calling backward() of the same function.
         if input.parent_fn != null
-          var parent_fn: function.HasCallableNode = input.parent_fn
+          var parent_fn: function.Function = input.parent_fn
 
           if scanned_fnids->index(parent_fn.id) == -1
             scanned_fnids->add(parent_fn.id)
@@ -58,7 +58,7 @@ export def Backward(
         endif
       endfor
 
-      sort(funcs, (lhs: function.HasCallableNode, rhs: function.HasCallableNode): number => {
+      sort(funcs, (lhs: function.Function, rhs: function.Function): number => {
           if lhs.gen == rhs.gen
             return 0
           elseif lhs.gen < rhs.gen

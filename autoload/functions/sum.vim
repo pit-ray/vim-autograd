@@ -10,16 +10,9 @@ import './broadcast_to.vim'
 import './sum_to.vim'
 
 var Function = function.Function
-var HasCallableNode = function.HasCallableNode
 
 
-class SumFunction extends Function implements HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
+class SumFunction extends Function
   this._axis: list<number>
   this._keepdims: bool = false
 

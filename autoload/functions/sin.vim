@@ -9,16 +9,9 @@ import './cos.vim'
 import './mul.vim'
 
 var Function = function.Function
-var HasCallableNode = function.HasCallableNode
 
 
-class SinFunction extends Function implements HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
+class SinFunction extends Function
   def new()
     super.Init('sin')
   enddef

@@ -8,16 +8,9 @@ import '../utils/system.vim'
 import './transpose.vim'
 
 var Function = function.Function
-var HasCallableNode = function.HasCallableNode
 
 
-class MatmulFunction extends Function implements HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
+class MatmulFunction extends Function
   this._x0_shape_fix: list<number>
   this._x1_shape_fix: list<number>
 

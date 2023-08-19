@@ -8,16 +8,9 @@ import '../core/tensor.vim'
 import './mul.vim'
 
 var Function = function.Function
-var HasCallableNode = function.HasCallableNode
 
 
-class SignFunction extends Function implements HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
+class SignFunction extends Function
   def new()
     super.Init('sign')
   enddef

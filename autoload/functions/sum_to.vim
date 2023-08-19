@@ -9,7 +9,6 @@ import '../utils/system.vim'
 import './broadcast_to.vim'
 
 var Function = function.Function
-var HasCallableNode = function.HasCallableNode
 
 
 export def LeftSideSumTo(
@@ -55,13 +54,7 @@ export def RightSideSumTo(
 enddef
 
 
-class SumToFunction extends Function implements HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
+class SumToFunction extends Function
   this._shape: list<number>
 
   def new()

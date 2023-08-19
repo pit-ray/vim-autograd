@@ -4,21 +4,9 @@ import './tensor.vim'
 import './context.vim'
 
 
-export interface HasCallableNode
-  public this.name: string
-  public this.gen: number
-  public this.id: number
-  public this.inputs: list<tensor.Tensor>
-  public this.outputs: list<tensor.Tensor>
-
-  def Forward(xs: list<tensor.Tensor>): list<tensor.Tensor>
-  def Backward(gys: list<tensor.Tensor>): list<tensor.Tensor>
-endinterface
-
-
 var last_node_id: number = v:numbermax / 2 - 1
 
-export abstract class Function implements HasCallableNode
+export abstract class Function
   public this.name: string
   public this.gen: number
   public this.id: number
