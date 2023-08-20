@@ -15,6 +15,12 @@ If you are using [vim-plug](https://github.com/junegunn/vim-plug), can install a
 Plug 'pit-ray/vim-autograd'
 ```
 
+If you want to use the more efficient Vim9 script, please install the experimental [vim9 branch](https://github.com/pit-ray/vim-autograd/tree/vim9) implementation.
+
+```vim
+Plug 'pit-ray/vim-autograd', {'branch': 'vim9'}
+```
+
 ## Usage
 
 A computational graph is constructed by applying the provided differentiable functions to a Tensor object, and the gradient is calculated by backpropagating from the output.
