@@ -213,13 +213,13 @@ function! s:main() abort
   endfor
   call ng.end()
 
-  echomsg 'accuracy: ' . accuracy / len(data['test'][1])
+  echomsg 'accuracy: ' . accuracy * 100 / len(data['test'][1]) . '%'
 endfunction
 
 function! s:benchmark()
   let l:start = reltime()
   call s:main()
-  echomsg str2float(reltimestr(reltime(l:start)))
+  echomsg 'runtime: ' . str2float(reltimestr(reltime(start))) . ' seconds'
 endfunction
 
 call s:benchmark()

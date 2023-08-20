@@ -2,13 +2,11 @@ vim9script
 scriptencoding utf-8
 
 import '../autoload/autograd.vim' as ag
-
-
 var Tensor = ag.Tensor
 
 
 interface HasModule
-  def GetParameters(): list<Tensor>
+  def Parameters(): list<Tensor>
   def Forward(...inputs: list<any>): Tensor
 endinterface
 
@@ -20,13 +18,13 @@ class Linear implements HasModule
   def new(in_channels: number, out_channels: number)
     var std = sqrt(2.0 / in_channels)
     this.weight = ag.Normal(0.0, std, [in_channels, out_channels])
-    this.bias = ag.Zeros([out_channels])
-
     this.weight.SetName('weight')
+
+    this.bias = ag.Zeros([out_channels])
     this.bias.SetName('bias')
   enddef
 
-  def GetParameters(): list<Tensor>
+  def Parameters(): list<Tensor>
     return [this.weight, this.bias]
   enddef
 
@@ -65,10 +63,10 @@ class MLP implements HasModule
     this.l2 = Linear.new(hidden_size, classes)
   enddef
 
-  def GetParameters(): list<Tensor>
+  def Parameters(): list<Tensor>
     var params: list<Tensor>
-    params += this.l1.GetParameters()
-    params += this.l2.GetParameters()
+    params += this.l1.Parameters()
+    params += this.l2.Parameters()
     return params
   enddef
 
@@ -80,8 +78,25 @@ class MLP implements HasModule
 endclass
 
 
-class SGD
+abstract class Optimizer
   this.params: list<Tensor>
+
+  def OneUpdate(param: Tensor): Tensor
+  enddef
+
+  def Step()
+    map(this.params, (_, v): Tensor => this.OneUpdate(v))
+  enddef
+
+  def ZeroGrad()
+    for param in this.params
+      param.grad = ag.ZerosLike(param)
+    endfor
+  enddef
+endclass
+
+
+class SGD extends Optimizer
   this.lr: float
   this.momentum: float
   this.weight_decay: float
@@ -120,16 +135,6 @@ class SGD
     this.vs[param.id] = v
 
     return ag.Elementwise([param, v], (x1, x2): float => x1 + x2, param)
-  enddef
-
-  def Step()
-    map(this.params, (_, v): Tensor => this.OneUpdate(v))
-  enddef
-
-  def ZeroGrad()
-    for param in this.params
-      param.grad = ag.ZerosLike(param)
-    endfor
   enddef
 endclass
 
@@ -200,7 +205,7 @@ def Main()
   var ndim = 13
   var nclass = 3
   var model = MLP.new(ndim, nclass)
-  var optim = SGD.new(model.GetParameters(), 0.1, 0.9, 0.0001)
+  var optim = SGD.new(model.Parameters(), 0.1, 0.9, 0.0001)
 
   # train
   var max_epoch: number = 14
@@ -258,7 +263,7 @@ def Main()
       endif
     endfor
 
-    echomsg 'accuracy: ' .. accuracy / len(test_t)
+    echomsg 'accuracy: ' .. accuracy * 100 / len(test_t) .. '%'
   })
 
 enddef
@@ -267,7 +272,7 @@ enddef
 def Benchmark()
   var start = reltime()
   Main()
-  echomsg str2float(reltimestr(reltime(start)))
+  echomsg 'runtime: ' .. str2float(reltimestr(reltime(start))) .. ' seconds'
 enddef
 
 
