@@ -1,5 +1,5 @@
 # vim-autograd
-**Automatic differentiation library written in pure Vim script.**
+**Automatic differentiation library written in pure Vim9 script.**
 
 [![test-vim9](https://github.com/pit-ray/vim-autograd/actions/workflows/test-vim9.yml/badge.svg?branch=vim9)](https://github.com/pit-ray/vim-autograd/actions/workflows/test-vim9.yml)
 
