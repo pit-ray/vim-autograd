@@ -219,14 +219,14 @@ function! s:main() abort
   let accuracy /= len(data['test'][1])
   let elapsed_time /= len(data['test'][1])
 
-  echomsg 'accuracy: ' . accuracy * 100 . '(%)'
-  echomsg 'processing time: ' . elapsed_time * 1000 . '(ms)'
+  echomsg 'accuracy: ' . accuracy * 100 . ' (%)'
+  echomsg 'processing time: ' . elapsed_time * 1000 . ' (ms)'
 endfunction
 
 function! s:benchmark()
   let l:start = reltime()
   call s:main()
-  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. '(s)'
+  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. ' (s)'
 endfunction
 
 call s:benchmark()

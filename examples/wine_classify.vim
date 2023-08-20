@@ -269,8 +269,8 @@ def Main()
     accuracy /= len(test_t)
     elapsed_time /= len(test_t)
 
-    echomsg 'accuracy: ' .. accuracy * 100 .. '(%)'
-    echomsg 'processing time: ' .. elapsed_time * 1000 .. '(ms)'
+    echomsg 'accuracy: ' .. accuracy * 100 .. ' (%)'
+    echomsg 'processing time: ' .. elapsed_time * 1000 .. ' (ms)'
   })
 
 enddef
@@ -279,7 +279,7 @@ enddef
 def Benchmark()
   var start = reltime()
   Main()
-  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. '(s)'
+  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. ' (s)'
 enddef
 
 

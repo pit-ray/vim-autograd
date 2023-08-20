@@ -3,7 +3,6 @@ vim9script
 import '../autoload/autograd.vim' as ag
 const Tensor = ag.Tensor
 
-
 def F(x: Tensor): Tensor
   # y = x^5 - 2x^3
   var y = ag.Sub(
@@ -11,7 +10,6 @@ def F(x: Tensor): Tensor
     ag.Mul(2, ag.Pow(x, 3)))
   return y
 enddef
-
 
 def Main()
   var x = Tensor.new(2.0)

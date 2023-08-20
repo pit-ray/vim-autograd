@@ -12,7 +12,7 @@ This library allows us to create next-generation plugins with numerical computat
 If you are using [vim-plug](https://github.com/junegunn/vim-plug), can install as follows.
 
 ```vim
-Plug 'pit-ray/vim-autograd'
+Plug 'pit-ray/vim-autograd', {'branch': 'vim9'}
 ```
 
 ## Usage
@@ -20,21 +20,32 @@ Plug 'pit-ray/vim-autograd'
 A computational graph is constructed by applying the provided differentiable functions to a Tensor object, and the gradient is calculated by backpropagating from the output.
 
 ```vim
-function! s:f(x) abort
-  " y = x^5 - 2x^3
-  let y = autograd#sub(a:x.p(5), a:x.p(3).m(2))
+vim9script
+import '../autoload/autograd.vim' as ag
+const Tensor = ag.Tensor
+
+def F(x: Tensor): Tensor
+  # y = x^5 - 2x^3
+  var y = ag.Sub(
+    ag.Pow(x, 5),
+    ag.Mul(2, ag.Pow(x, 3)))
   return y
-endfunction
+enddef
 
-function! s:example() abort
-  let x = autograd#tensor(2.0)
-  let y = s:f(x)
+def Main()
+  var x = Tensor.new(2.0)
+  var y = F(x)
+  ag.Backward(y)
 
-  call y.backward()
-  echo x.grad.data
-endfunction
+  var x_grad: Tensor = x.grad
+  echo x_grad.data
 
-call s:example()
+  x.SetName('x')
+  y.SetName('y')
+  ag.DumpGraph(y, '.autograd/example1.png')
+enddef
+
+Main()
 ```
 
 **Output**
@@ -60,9 +71,6 @@ The computational graph is automatically generated like the below.
 - [pytorch/pytorch](https://github.com/pytorch/pytorch)
 - [numpy/numpy](https://github.com/numpy/numpy)
 - [mattn/vim-brain](https://github.com/mattn/vim-brain)
-
-## ToDo
-- [ ] Support Vim9 Script
 
 ## License
 This library is provided by **MIT License**.
