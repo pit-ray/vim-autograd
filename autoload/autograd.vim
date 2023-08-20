@@ -1,5 +1,6 @@
 vim9script
 
+
 import './core/tensor.vim'
 export const Tensor = tensor.Tensor
 export const Clone = tensor.Clone
