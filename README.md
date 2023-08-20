@@ -21,7 +21,7 @@ A computational graph is constructed by applying the provided differentiable fun
 
 ```vim
 vim9script
-import '../autoload/autograd.vim' as ag
+import autoload 'autograd.vim' as ag
 const Tensor = ag.Tensor
 
 def F(x: Tensor): Tensor
