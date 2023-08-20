@@ -75,7 +75,7 @@ var gx1 = autograd.Grad(y, x, 1)
 var gx2 = autograd.Grad(gx1, x, 1)
 ```
 
-To enable double-backprop, the first argument of `autograd.Backward()` or the third argument of `autograd.Grad()` must be `true`.
+To enable double-backprop, the second argument of `autograd.Backward()` or the third argument of `autograd.Grad()` must be `true`.
 
 The following is an example of finding the third-order derivative.
 
