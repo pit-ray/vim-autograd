@@ -1,7 +1,7 @@
 # vim-autograd
 **Automatic differentiation library written in pure Vim script.**
 
-[![test](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/pit-ray/vim-autograd/actions/workflows/test.yml)  
+[![test-vim9](https://github.com/pit-ray/vim-autograd/actions/workflows/test-vim9.yml/badge.svg?branch=vim9)](https://github.com/pit-ray/vim-autograd/actions/workflows/test-vim9.yml)
 
 vim-autograd provides a foundation for automatic differentiation through the Define-by-Run style algorithm such as Chainer or PyTorch. Since it is written completely in pure Vim script, there are no dependencies.
 
