@@ -424,11 +424,18 @@ def Main()
     echomsg 'accuracy: ' .. accuracy * 100 .. '(%)'
     echomsg 'processing time: ' .. elapsed_time * 1000 .. '(ms)'
   })
-
 enddef
+
+def Benchmark()
+  var start = reltime()
+  Main()
+  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. ' (s)'
+enddef
+
+Benchmark()
 ```
 
-When `Main()` is executed, the loss is reduced as follows, and training is completed in a few minutes.
+When `Benchmark()` is executed, the loss is reduced as follows, and training is completed in a few minutes.
 ```csv
 0, 0.379945
 1, 0.094833
