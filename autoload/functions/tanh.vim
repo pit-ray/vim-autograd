@@ -9,7 +9,7 @@ import './mul.vim'
 import './pow.vim'
 import './sub.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class TanhFunction extends Function

@@ -9,7 +9,7 @@ import './mul.vim'
 import './pow.vim'
 import './sum_to.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class DivFunction extends Function

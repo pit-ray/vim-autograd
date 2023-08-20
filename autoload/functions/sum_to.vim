@@ -8,7 +8,7 @@ import '../utils/system.vim'
 
 import './broadcast_to.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 export def LeftSideSumTo(

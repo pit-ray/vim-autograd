@@ -8,7 +8,7 @@ import '../utils/system.vim'
 
 import './sum_to.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class BroadcastToFunction extends Function

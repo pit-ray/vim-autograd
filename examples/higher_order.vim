@@ -2,8 +2,7 @@ vim9script
 scriptencoding utf-8
 
 import '../autoload/autograd.vim' as ag
-
-var Tensor = ag.Tensor
+const Tensor = ag.Tensor
 
 
 def F(x: Tensor): Tensor

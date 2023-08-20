@@ -2,7 +2,7 @@ vim9script
 scriptencoding utf-8
 
 import '../autoload/autograd.vim' as ag
-var Tensor = ag.Tensor
+const Tensor = ag.Tensor
 
 
 interface HasModule
@@ -254,16 +254,23 @@ def Main()
   # evaluate
   ag.NoGrad(() => {
     var accuracy: float = 0.0
+    var elapsed_time: float = 0.0
 
     for i in range(len(test_x))
+      var start = reltime()
       var pred = model.Forward([test_x[i]])
+      elapsed_time += reltimefloat(reltime(start))
 
       if Argmax(pred) == float2nr(test_t[i][0])
         accuracy += 1.0
       endif
     endfor
 
-    echomsg 'accuracy: ' .. accuracy * 100 / len(test_t) .. '%'
+    accuracy /= len(test_t)
+    elapsed_time /= len(test_t)
+
+    echomsg 'accuracy: ' .. accuracy * 100 .. '(%)'
+    echomsg 'processing time: ' .. elapsed_time * 1000 .. '(ms)'
   })
 
 enddef
@@ -272,7 +279,7 @@ enddef
 def Benchmark()
   var start = reltime()
   Main()
-  echomsg 'runtime: ' .. str2float(reltimestr(reltime(start))) .. ' seconds'
+  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. '(s)'
 enddef
 
 

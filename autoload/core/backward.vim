@@ -19,6 +19,9 @@ export def Backward(
     return
   endif
 
+  # If create_graph is false, does not create graph.
+  const Ctx = create_graph ? (F) => F() : context.NoGrad
+
   var funcs = [x.parent_fn]
   var scanned_fnids = []
   while len(funcs) > 0
@@ -29,8 +32,6 @@ export def Backward(
       gys->add(output.grad)
     endfor
 
-    # If create_graph is false, does not create graph in the following range.
-    var Ctx = create_graph ? (F) => F() : context.NoGrad
     Ctx(() => {
       var gxs = fn.Backward(gys)
 

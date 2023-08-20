@@ -8,7 +8,7 @@ import '../core/tensor.vim'
 import './cos.vim'
 import './mul.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class SinFunction extends Function

@@ -10,7 +10,7 @@ import './mul.vim'
 import './sub.vim'
 import './sum_to.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class PowFunction extends Function

@@ -1,8 +1,7 @@
 vim9script
 
 import '../autoload/autograd.vim' as ag
-
-var Tensor = ag.Tensor
+const Tensor = ag.Tensor
 
 
 def F(x: Tensor): Tensor
@@ -15,12 +14,12 @@ enddef
 
 
 def Main()
-  var x = ag.Tensor.new(2.0)
+  var x = Tensor.new(2.0)
 
   var y = F(x)
   ag.Backward(y)
 
-  var x_grad: ag.Tensor = x.grad
+  var x_grad: Tensor = x.grad
   echo x_grad.data
 
   x.SetName('x')

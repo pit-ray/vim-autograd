@@ -204,8 +204,11 @@ function! s:main() abort
   " evaluate
   let ng = autograd#no_grad()
   let accuracy = 0.0
+  let elapsed_time = 0.0
   for l:i in range(len(data['test'][0]))
+    let start = reltime()
     let pred = model.forward([data['test'][0][l:i]])
+    let elapsed_time += reltimefloat(reltime(start))
 
     " argmax
     let class_idx = index(pred.data, autograd#max(pred).data[0])
@@ -213,13 +216,17 @@ function! s:main() abort
   endfor
   call ng.end()
 
-  echomsg 'accuracy: ' . accuracy * 100 / len(data['test'][1]) . '%'
+  let accuracy /= len(data['test'][1])
+  let elapsed_time /= len(data['test'][1])
+
+  echomsg 'accuracy: ' . accuracy * 100 . '(%)'
+  echomsg 'processing time: ' . elapsed_time * 1000 . '(ms)'
 endfunction
 
 function! s:benchmark()
   let l:start = reltime()
   call s:main()
-  echomsg 'runtime: ' . str2float(reltimestr(reltime(start))) . ' seconds'
+  echomsg 'training time: ' .. reltimefloat(reltime(start)) .. '(s)'
 endfunction
 
 call s:benchmark()

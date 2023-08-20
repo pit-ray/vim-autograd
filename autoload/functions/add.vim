@@ -7,7 +7,7 @@ import '../core/tensor.vim'
 
 import './sum_to.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class AddFunction extends Function

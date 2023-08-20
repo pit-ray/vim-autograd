@@ -7,7 +7,7 @@ import '../utils/system.vim'
 
 import './transpose.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class MatmulFunction extends Function

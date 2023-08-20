@@ -7,7 +7,7 @@ import '../core/tensor.vim'
 
 import './mul.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class ExpFunction extends Function

@@ -8,7 +8,7 @@ import '../core/tensor.vim'
 import './mul.vim'
 import './sign.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class AbsFunction extends Function

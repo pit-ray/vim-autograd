@@ -9,7 +9,7 @@ import '../utils/system.vim'
 import './broadcast_to.vim'
 import './sum_to.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class SumFunction extends Function

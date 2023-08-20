@@ -76,8 +76,9 @@ enddef
 
 
 export const EmptyTensor = Tensor.new([])
-const type_of_tensor = type(EmptyTensor)
 
+
+const type_of_tensor = type(EmptyTensor)
 export def IsTensor(data: any): bool
   return type(data) == type_of_tensor
 enddef

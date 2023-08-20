@@ -7,7 +7,7 @@ import '../core/tensor.vim'
 
 import './mul.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 export def FloatMax(list_obj: list<float>): float

@@ -7,7 +7,7 @@ import '../core/tensor.vim'
 
 import './div.vim'
 
-var Function = function.Function
+const Function = function.Function
 
 
 class LogFunction extends Function
