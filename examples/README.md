@@ -279,7 +279,7 @@ endclass
 ```
 
 ### Prepare Optimizer
-SGD with momentum, weight decay, and gradient clipping can be implemented as follows.
+SGD with momentum and weight decay can be implemented as follows.
 
 [**examples/wine-classify.vim**](wine-classify.vim)
 ```vim
