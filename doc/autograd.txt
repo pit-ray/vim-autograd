@@ -6,7 +6,6 @@ CONTENTS                                             *vim-autograd-contents*
     2. Install                                        |vim-autograd-install|
     3. Classes                                        |vim-autograd-classes|
     4. Functions                                    |vim-autograd-functions|
-    4. Interfaces                                   |vim-autograd-functions|
     5. License                                        |vim-autograd-license|
     6. Maintainers                                |vim-autograd-maintainers|
 ==============================================================================
@@ -36,8 +35,27 @@ CLASSES                                               *vim-autograd-classes*
         Tensor.SetName()                                  |Tensor.SetName()|
 
 ------------------------------------------------------------------------------
+Tensor.new(data)                                              *Tensor.new()*
+Creates a Tensor object based on the arguments.
+
+    Arguments:
+        data (`list`<`float`>, `list`<`number`>, `float`, `number`):
+            `float` and `number` are generated as Tensor of shape in [1]. It
+            accepts a `list` of multidimensional arrays as arguments and
+            generates a Tensor of that shape. Arrays such as [[1], [2, 3]]
+            will result in an error. By the way, `number` is converted to
+            `float`.
+
+    Example: >
+        import 'autograd.vim' as ag
+
+        var x = ag.Tensor.new([[1, 2, 3], [4, 5, 6]])
+        echo x.shape  # [2, 3]
+        echo x.data   # [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+
+------------------------------------------------------------------------------
 Tensor.data                                                     *Tensor.data*
-It is the raw data retained as a 1-dimensional `list` of `float`.
+This attribute is the raw data retained as a 1-dimensional `list` of `float`.
 If you create a multidimensional array using |autograd.Tensor.new()| or
 |autograd.Zeros()|, etc., everything will be converted to flatten vector.
 
@@ -48,17 +66,17 @@ If you create a multidimensional array using |autograd.Tensor.new()| or
 
 ------------------------------------------------------------------------------
 Tensor.grad                                                     *Tensor.grad*
-It holds the gradient of that variable for a given output. Since it is a
-nested Tensor object, you can access the raw data as a |Tensor.data| attribute.
-However, the this attribute of each Tensor object on a computed graph that
-has not called |autograd.Backward()| or |autograd.Grad()| is null.
+This attribute holds the gradient of that variable for a given output. Since
+it is a nested Tensor object, you can access the raw data as a |Tensor.data|
+attribute. However, the this attribute of each Tensor object on a computed
+graph that has not called |autograd.Backward()| or |autograd.Grad()| is null.
 In v9.0.1558, |Tensor.grad| is declared as `any` type because a class cannot
 hold its own class nested as a member when it is declaring. Therefore, please
 indicate the type of |Tensor.grad| explicity as follows.
 
     Example: >
         import 'autograd.vim' as ag
-        var Tensor = ag.Tensor
+        const Tensor = ag.Tensor
 
         var x = ag.Tensor.new(2.0)
         echo x.grad   # null
@@ -71,7 +89,7 @@ indicate the type of |Tensor.grad| explicity as follows.
 <
 ------------------------------------------------------------------------------
 Tensor.shape                                                   *Tensor.shape*
-It has a `list` of `number` representing the shape of the array.
+This attribute has a `list` of `number` representing the shape of the array.
 Since vim-autograd does not have the concept of a scalar, a tensor created by
 |autograd.Tensor.new()| given a scalar value is interpreted as a vector of size 1.
 
@@ -80,871 +98,840 @@ Since vim-autograd does not have the concept of a scalar, a tensor created by
 
         var x = ag.Tensor.new(2.0)
         echo x.shape  # [1]
-        ehco x.data   # [2.0]
+        echo x.data   # [2.0]
 
         var y = ag.Tensor.new([[1, 2], [3, 4]])
         echo y.shape  # [2, 2]
         echo y.data   # [1.0, 2.0, 3.0, 4.0]
-<
+
 ------------------------------------------------------------------------------
-Tensor.cleargrad()                                      *Tensor.cleargrad()*
+Tensor.Numel()                                               *Tensor.Numel()*
+Returns the total number of elements in the |Tensor.data| attribute. This
+method is equivalent to len(x.data).
+
+    Example: >
+        import 'autograd.vim' as ag
+
+        var x1 = ag.Tensor.new(2.0)
+        echo x1.shape    # [1]
+        echo x1.Numel()  # 1
+
+        var x2 = ag.Tensor.new([1, 2, 3, 4])
+        echo x2.shape    # [4]
+        echo x2.Numel()  # 4
+
+        var x3 = ag.Tensor.new([[1, 2], [3, 4], [5, 6]])
+        echo x3.shape    # [3, 2]
+        echo x3.Numel()  # 6
+
+------------------------------------------------------------------------------
+Tensor.Dim()                                                   *Tensor.Dim()*
+Returns the number of dimensions of the |Tensor.data| attribute. This method
+is equivalent to len(x.shape).
+
+    Example: >
+        import 'autograd.vim' as ag
+
+        var x1 = ag.Tensor.new([1, 2, 3, 4])
+        echo x1.shape  # [4]
+        echo x1.Dim()  # 1
+
+        var x2 = ag.Tensor.new([[1, 2], [3, 4], [5, 6]])
+        echo x2.shape  # [3, 2]
+        echo x2.Dim()  # 2
+
+------------------------------------------------------------------------------
+Tensor.Empty()                                               *Tensor.Empty()*
+Checks if the |Tensor.data| attribute is empty and returns it with a `bool`
+value. This method is equivalent to x.Numel() == 0.
+
+    Example: >
+        import 'autograd.vim' as ag
+
+        var x1 = ag.Tensor.new([1, 2, 3, 4])
+        echo x1.Empty()  # false
+
+        var x2 = ag.Tensor.new([])
+        echo x2.Empty()  # true
+
+------------------------------------------------------------------------------
+Tensor.ClearGrad()                                       *Tensor.ClearGrad()*
 Resets the retained gradient.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.pow(x, 3.0)
-        call y.backward(1)
-        let gx1 = x.grad
+        import 'autograd.vim' as ag
+        const Tensor = ag.Tensor
 
-        call x.cleargrad()
-        call gx1.backward()
-        let gx2 = x.grad
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Pow(x, 3.0)
+        ag.Backward(y, true)
+        var gx1: Tensor = x.grad
+        echo gx1.data  # [12.0]
+
+        x.ClearGrad()
+        echo x.grad  # null
+
+        ag.Backward(gx1)
+        var gx2: Tensor = x.grad
+        echo gx2.data  # [12.0]
 <
 ------------------------------------------------------------------------------
-Function.apply(x1, x2, ..., xn)                           *Function.apply()*
-It constructs computed graphs after calling the forward method of a
-differentiable function of your own definition. If the |Function.forward()|
-method returns a `List` with one element, it returns a Tensor object. If
-|Function.forward()| method returns a `List` with two or more elements, it
-returns a `List`.
-For details, see |autograd.Function()|
-
-    Arguments:
-        x1, x2, ..., xn (variadic of Tensor, `List`, `Float`, or `Number`):
-            All arguments are converted to Tensor.
-
-------------------------------------------------------------------------------
-Function.forward(xs)                                    *Function.forward()*
-Forward propagation of the function.
-When defining your own, you must return a `List` of Tensors in the return
-value. For details, see |autograd.Function()|
-
-    Arguments:
-        xs (`List` of Tensor):
-            A `List` of Tensors is passed as an argument.
-
-------------------------------------------------------------------------------
-Function.backward(gys)                                 *Function.backward()*
-Backward propagation of the function.
-A `List` with Tensors whose elements refer to the .grad attribute of the
-Tensor output by |Function.forward()| is passed as an argument. The function
-used in backward must be a differentiable Function object, and the return
-value must be a `List` of Tensors.
-For details, see |autograd.Function()|
-
-    Arguments:
-        gys (`List` of Tensor):
-            A `List` of Tensors is passed as an argument.
-
-------------------------------------------------------------------------------
-NoGrad.end()                                                  *NoGrad.end()*
-Exit from the mode without backpropagation.
-NoGrad objects can be created with |autograd.no_grad()|.
+Tensor.SetName()                                           *Tensor.SetName()*
+Set the name to the Tensor node for visualization of the computational graph
+by |autograd.DumpGraph()|.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let handle = autograd.no_grad()
-        let y = autograd.pow(x, 4.0)
-        call handle.end()
-<
+        import 'autograd.vim' as ag
+        const Tensor = ag.Tensor
+
+        var x = Tensor.new(2.0)
+        var y = ag.Add(x, 3.0)
+        ag.Backward(y)
+
+        x.SetName('x')
+        y.SetName('y')
+        ag.DumpGraph(y, '.autograd/graph.png')
+
+
 ==============================================================================
 FUNCTIONS                                           *vim-autograd-functions*
     Tensor Constructor
-        autograd.tensor()                                |autograd.tensor()|
-        autograd.as_tensor()                          |autograd.as_tensor()|
-        autograd.zeros()                                  |autograd.zeros()|
-        autograd.zeros_like()                        |autograd.zeros_like()|
-        autograd.ones()                                    |autograd.ones()|
-        autograd.ones_like()                          |autograd.ones_like()|
-        autograd.rand()                                    |autograd.rand()|
-        autograd.uniform()                              |autograd.uniform()|
-        autograd.randn()                                  |autograd.randn()|
-        autograd.normal()                                |autograd.normal()|
-
-    Function Constructor
-        autograd.Function()                            |autograd.Function()|
+        autograd.AsTensor()                            |autograd.AsTensor()|
+        autograd.Zeros()                                  |autograd.Zeros()|
+        autograd.ZerosLike()                          |autograd.ZerosLike()|
+        autograd.Ones()                                    |autograd.Ones()|
+        autograd.OnesLike()                            |autograd.OnesLike()|
+        autograd.Rand()                                    |autograd.Rand()|
+        autograd.Uniform()                              |autograd.Uniform()|
+        autograd.Randn()                                  |autograd.Randn()|
+        autograd.Normal()                                |autograd.Normal()|
 
     Differentiable Functions
-        autograd.add()                                      |autograd.add()|
-        autograd.mul()                                      |autograd.mul()|
-        autograd.sub()                                      |autograd.sub()|
-        autograd.div()                                      |autograd.div()|
-        autograd.pow()                                      |autograd.pow()|
-        autograd.sqrt()                                    |autograd.sqrt()|
-        autograd.log()                                      |autograd.log()|
-        autograd.exp()                                      |autograd.exp()|
-        autograd.sin()                                      |autograd.sin()|
-        autograd.cos()                                      |autograd.cos()|
-        autograd.tanh()                                    |autograd.tanh()|
-        autograd.abs()                                      |autograd.abs()|
-        autograd.sign()                                    |autograd.sign()|
-        autograd.sum()                                      |autograd.sum()|
-        autograd.broadcast_to()                    |autograd.broadcast_to()|
-        autograd.sum_to()                                |autograd.sum_to()|
-        autograd.max()                                      |autograd.max()|
-        autograd.maximum()                              |autograd.maximum()|
-        autograd.transpose()                          |autograd.transpose()|
-        autograd.matmul()                                |autograd.matmul()|
-        autograd.reshape()                              |autograd.reshape()|
-        autograd.flatten()                              |autograd.flatten()|
+        autograd.Add()                                      |autograd.Add()|
+        autograd.Mul()                                      |autograd.Mul()|
+        autograd.Sub()                                      |autograd.Sub()|
+        autograd.Div()                                      |autograd.Div()|
+        autograd.Pow()                                      |autograd.Pow()|
+        autograd.Sqrt()                                    |autograd.Sqrt()|
+        autograd.Log()                                      |autograd.Log()|
+        autograd.Exp()                                      |autograd.Exp()|
+        autograd.Sin()                                      |autograd.Sin()|
+        autograd.Cos()                                      |autograd.Cos()|
+        autograd.Tanh()                                    |autograd.Tanh()|
+        autograd.Abs()                                      |autograd.Abs()|
+        autograd.Sign()                                    |autograd.Sign()|
+        autograd.Sum()                                      |autograd.Sum()|
+        autograd.BroadcastTo()                      |autograd.BroadcastTo()|
+        autograd.Max()                                      |autograd.Max()|
+        autograd.Maximum()                              |autograd.Maximum()|
+        autograd.Transpose()                          |autograd.Transpose()|
+        autograd.Matmul()                                |autograd.Matmul()|
+        autograd.Reshape()                              |autograd.Reshape()|
+        autograd.Flatten()                              |autograd.Flatten()|
 
     Mathematical Utilities
-        autograd.manual_seed()                      |autograd.manual_seed()|
-        autograd.random()                                |autograd.random()|
-        autograd.fmax()                                    |autograd.fmax()|
-        autograd.pi()                                        |autograd.pi()|
-        autograd.grad()                                    |autograd.grad()|
-        autograd.no_grad()                              |autograd.no_grad()|
-        autograd.elementwise()                      |autograd.elementwise()|
+        autograd.ManualSeed()                        |autograd.ManualSeed()|
+        autograd.Random()                                |autograd.Random()|
+        autograd.Pi()                                        |autograd.Pi()|
+        autograd.Grad()                                    |autograd.Grad()|
+        autograd.NoGrad()                                |autograd.NoGrad()|
+        autograd.Elementwise()                      |autograd.Elementwise()|
 
     Utilities
-        autograd.shuffle()                              |autograd.shuffle()|
-        autograd.dump_graph()                        |autograd.dump_graph()|
-        autograd.numerical_grad()                |autograd.numerical_grad()|
-        autograd.gradcheck()                          |autograd.gradcheck()|
+        autograd.Shuffle()                              |autograd.Shuffle()|
+        autograd.DumpGraph()                          |autograd.DumpGraph()|
+        autograd.NumericalGrad()                  |autograd.NumericalGrad()|
+        autograd.GradCheck()                          |autograd.GradCheck()|
 
 ------------------------------------------------------------------------------
-autograd.tensor(data)                                    *autograd.tensor()*
-It creates a Tensor object based on the arguments.
-
-    Arguments:
-        data (`List`, `Float`, `Number`):
-            `Float` and `Number` are generated as Tensor of shape in [1]. It
-            accepts a `List` of multidimensional arrays as arguments and
-            generates a Tensor of that shape. Arrays such as [[1], [2, 3]]
-            will result in an error. By the way, `Number` is converted to
-            `Float`.
-
-    Example: >
-        let x = autograd.tensor([[1, 2, 3], [4, 5, 6]])
-        call assert_equal([2, 3], x.shape)
-        call assert_equal([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], x.data)
-<
-------------------------------------------------------------------------------
-autograd.as_tensor(data)                              *autograd.as_tensor()*
+autograd.AsTensor(data)                                *autograd.AsTensor()*
 Convert data to Tensor.
 
     Arguments:
-        data (Tensor, `List`, `Float`, `Number`):
+        data (|Tensor|, `list`, `float`, `number`):
             Tensors are returned as is, and others are converted to Tensors
             and returned.
 
     Example: >
-        let x = autograd.as_tensor([2, 3, 4])
+        import 'autograd.vim' as ag
+        var x = ag.AsTensor([2, 3, 4])
 <
 ------------------------------------------------------------------------------
-autograd.zeros(shape)                                     *autograd.zeros()*
+autograd.Zeros(shape)                                      *autograd.Zeros()*
 Create a Tensor filled with zero with the shape given by the argument.
 
     Arguments:
-        shape (`List`):
-            `List` with `Number` as element.
+        shape (`list`):
+            `list` with `number` as element.
 
     Example: >
-        let x = autograd.zeros([2, 3])
+        import 'autograd.vim' as ag
+        var x = ag.Zeros([2, 3])
 <
 ------------------------------------------------------------------------------
-autograd.zeros_like(tensor)                          *autograd.zeros_like()*
+autograd.ZerosLike(tensor)                             *autograd.ZerosLike()*
 Create a Tensor filled with zero in the same shape as the argument.
 
     Arguments:
-        tensor (Tensor):
+        tensor (|Tensor|):
             The shape will be the same as the output tensor.
 
     Example: >
-        let x = autograd.randn(2, 3)
-        let y = autograd.zeros_like(x)
-<
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
+        var y = ag.ZerosLike(x)
 
 ------------------------------------------------------------------------------
-autograd.ones(shape)                                       *autograd.ones()*
+autograd.Ones(shape)                                        *autograd.Ones()*
 Create a Tensor filled with one with the shape given by the argument.
 
     Arguments:
-        shape (`List`):
-            `List` with `Number` as element.
+        shape (`list`):
+            `list` with `number` as element.
 
     Example: >
-        let x = autograd.ones([2, 3])
+        import 'autograd.vim' as ag
+        var x = ag.Ones([2, 3])
 <
 ------------------------------------------------------------------------------
-autograd.ones_like(tensor)                            *autograd.ones_like()*
+autograd.OnesLike(tensor)                               *autograd.OnesLike()*
 Create a Tensor filled with one in the same shape as the argument.
 
     Arguments:
-        tensor (Tensor):
+        tensor (|Tensor|):
             The shape will be the same as the output tensor.
 
     Example: >
-        let x = autograd.randn(2, 3)
-        let y = autograd.ones_like(x)
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
+        var y = ag.OnesLike(x)
 
 ------------------------------------------------------------------------------
-autograd.rand(s1, s2, ..., sn)                             *autograd.rand()*
+autograd.Rand(s1, s2, ..., sn)                              *autograd.Rand()*
 Create a Tensor of the same shape as the argument with the random value
 sampled from a uniform distribution as elements.
 
     Arguments:
-        s1, s2, ..., sn (variadic of `Number`):
+        s1, s2, ..., sn (variadic of `number`):
             The output tensor has the same as this shape.
 
     Example: >
-        let x = autograd.rand(2, 3)
+        import 'autograd.vim' as ag
+        var x = ag.Rand(2, 3)
 
 ------------------------------------------------------------------------------
-autograd.uniform(low=0.0, high=1.0, shape=[1])          *autograd.uniform()*
-Create a Tensor of the same shape as the argument with the random value
+autograd.Uniform(low=0.0, high=1.0, shape=[1])           *autograd.Uniform()*
+Create a |Tensor| of the same shape as the argument with the random value
 sampled from a uniform distribution between low and high range as elements.
 
     Arguments:
-        low (`Float`):
+        low (`float`):
             Lower boundary of the output interval.
 
-        high (`Float`):
+        high (`float`):
             Upper boundary of the output interval.
 
-        shape (`List` of `Number`)
+        shape (`list` of `number`)
             The output tensor has the same as this shape.
 
     Example: >
-        let x = autograd.uniform(0.0, 5.0, [2, 3])
+        import 'autograd.vim' as ag
+        var x = ag.Uniform(0.0, 5.0, [2, 3])
 
 ------------------------------------------------------------------------------
-autograd.randn(s1, s2, ..., sn)                           *autograd.randn()*
-Create a Tensor of the same shape as the argument with the random value
+autograd.Randn(s1, s2, ..., sn)                            *autograd.Randn()*
+Create a |Tensor| of the same shape as the argument with the random value
 sampled from a standard uniform distribution sampled from a normal
 distribution with mean 0.0 and standard deviation 1.0 as elements.
 
     Arguments:
-        s1, s2, ..., sn (variadic of `Number`):
+        s1, s2, ..., sn (variadic of `number`):
             The output tensor has the same as this shape.
 
     Example: >
-        let x = autograd.randn(2, 3)
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
 
 ------------------------------------------------------------------------------
-autograd.normal(mean=0.0, std=1.0, shape=[1])            *autograd.normal()*
+autograd.Normal(mean=0.0, std=1.0, shape=[1])             *autograd.Normal()*
 Generate a normal distribution with arbitrary mean and standard deviation.
 
     Arguments:
-        mean (`Float`):
-            Average value of `Float` type.
+        mean (`float`):
+            Average value of `float` type.
 
-        std (`Float`):
-            Standard deviation of `Float` type.
+        std (`float`):
+            Standard deviation of `float` type.
 
-        shape (`List` of `Number`):
+        shape (`list` of `number`):
             The output tensor has the same as this shape.
 
     Example: >
-        let x = autograd.normal(0.0, 2.0, [2, 3])
+        import 'autograd.vim' as ag
+        var x = ag.Normal(0.0, 2.0, [2, 3])
 
 ------------------------------------------------------------------------------
-autograd.Function(name)                                *autograd.Function()*
-Defines a differentiable function.
-At this time, you must also define functions with a dict suffix of
-{name}_forward() and {name}_backward() to the name specified in the name
-argument. Defining your own Function object is more efficient than using the
-differentiable functions provided by vim-autograd, such as |autograd.add()| or
-|autograd.mul()|, since it does not retain intermediate objects in the
-computational graph. The |Function.forward()| and |Function.backward()| methods
-refer to the {name}_forward and {name}_backward methods, respectively.
+autograd.Add(input, other)                                   *autograd.Add()*
+Add like input + other element-wise.
 
     Arguments:
-        name (`String`):
-            This argument must also have a scope prefix such as `s:`.
-
-    Example: >
-        function! nn#relu(x) abort
-          return autograd.Function('nn#relu').apply(a:x)
-        endfunction
-
-        function! nn#relu_forward(xs) dict abort
-          return [autograd.elementwise(a:xs, {a -> a > 0.0 ? a : 0.0})]
-        endfunction
-
-        function! nn#relu_backward(gys) dict abort
-          let l:x = self.inputs[0]
-          let l:mask = autograd.elementwise([l:x], {a -> a > 0.0})
-          return [autograd.mul(a:gys[0], l:mask)]
-        endfunction
-
-------------------------------------------------------------------------------
-autograd.add(input, other)                                  *autograd.add()*
-Add like input + other element-wise. There is an alias |Tensor.a()|.
-
-    Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of other.
 
-        other (Tensor, `List`, `Float`, `Number`):
+        other (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of input.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.add(x, 4.0)
-        " y.data: [6.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Add(x, 4.0)
+        echo y.data  # [6.0]
 <
 ------------------------------------------------------------------------------
-autograd.mul(input, other)                                  *autograd.mul()*
-Multiply like input * other element-wise. There is an alias |Tensor.m()|.
+autograd.Mul(input, other)                                   *autograd.Mul()*
+Multiply like input * other element-wise.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of other.
 
-        other (Tensor, `List`, `Float`, `Number`):
+        other (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of input.
 
     Example: >
-        let x = autograd.tensor(4.0)
-        let y = autograd.mul(x, 2.0)
-        " y.data: [8.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(4.0)
+        var y = ag.Mul(x, 2.0)
+        echo y.data  # [8.0]
 
 ------------------------------------------------------------------------------
-autograd.sub(input, other)                                  *autograd.sub()*
-Subtract like input - other element-wise. There is an alias |Tensor.s()|.
+autograd.Sub(input, other)                                   *autograd.Sub()*
+Subtract like input - other element-wise.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of other.
 
-        other (Tensor, `List`, `Float`, `Number`):
+        other (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of input.
 
     Example: >
-        let x = autograd.tensor(5.0)
-        let y = autograd.sub(x, 2.0)
-        " y.data: [3.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(5.0)
+        var y = ag.Sub(x, 2.0)
+        echo y.data  # [3.0]
 
 ------------------------------------------------------------------------------
-autograd.div(input, other)                                  *autograd.div()*
-Divide like input / other element-wise. There is an alias |Tensor.d()|.
+autograd.Div(input, other)                                   *autograd.Div()*
+Divide like input / other element-wise.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of other.
 
-        other (Tensor, `List`, `Float`, `Number`):
+        other (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of input.
 
     Example: >
-        let x = autograd.tensor(6.0)
-        let y = autograd.div(x, 2.0)
-        " y.data: [3.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(6.0)
+        var y = ag.Div(x, 2.0)
+        echo y.data  # [3.0]
 
 ------------------------------------------------------------------------------
-autograd.pow(input, other)                                  *autograd.pow()*
+autograd.Pow(input, other)                                   *autograd.Pow()*
 Compute element-wise power like input ** other (input ^ other).
-There is an alias |Tensor.p()|.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of other.
 
-        other (Tensor, `List`, `Float`, `Number`):
+        other (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor. It is also
             broadcast if it is smaller than the shape of input.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.pow(x, 5.0)
-        " y.data: [32.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Pow(x, 5.0)
+        ehco y.data  # [32.0]
 <
 ------------------------------------------------------------------------------
-autograd.sqrt(input)                                       *autograd.sqrt()*
+autograd.Sqrt(input)                                        *autograd.Sqrt()*
 Calculate element-wise square root of input. This is the same as
-autograd.pow(input, 0.5).
+|autograd.Pow|(input, 0.5).
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.sqrt(x)
-        " y.data: [1.414214]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Sqrt(x)
+        echo y.data  # [1.414214]
 <
 ------------------------------------------------------------------------------
-autograd.log(input)                                         *autograd.log()*
+autograd.Log(input)                                          *autograd.Log()*
 Calculate the natural logarithm log that the inverse of the exponential
-function in base e.
+function in base Napier's constant.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.log(x)
-        " y.data: 0.693147
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Log(x)
+        echo y.data  # [0.693147]
 <
 ------------------------------------------------------------------------------
-autograd.exp(input)                                         *autograd.exp()*
+autograd.Exp(input)                                          *autograd.Exp()*
 Calculate the exponential.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.exp(x)
-        " y.data: 7.389056
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Exp(x)
+        echo y.data  # [7.389056]
 
 ------------------------------------------------------------------------------
-autograd.sin(theta)                                         *autograd.sin()*
+autograd.Sin(theta)                                          *autograd.Sin()*
 Calculate element-wise sine.
 
     Arguments:
-        theta (Tensor, `List`, `Float`, `Number`):j
+        theta (|Tensor|, `list`, `float`, `number`):j
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor(autograd.pi() / 4)
-        let y = autograd.sin(x)
-        " y.data: 0.707107
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(autograd.Pi() / 4)
+        var y = ag.Sin(x)
+        echo y.data  # [0.707107]
 
 ------------------------------------------------------------------------------
-autograd.cos(theta)                                         *autograd.cos()*
+autograd.Cos(theta)                                          *autograd.Cos()*
 Calculate element-wise cosine.
 
     Arguments:
-        theta (Tensor, `List`, `Float`, `Number`):
+        theta (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor(autograd.pi() / 4)
-        let y = autograd.cos(x)
-        " y.data: 0.707107
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(autograd.Pi() / 4)
+        var y = ag.Cos(x)
+        echo y.data  # [0.707107]
 <
 ------------------------------------------------------------------------------
-autograd.tanh(input)                                       *autograd.tanh()*
+autograd.Tanh(input)                                        *autograd.Tanh()*
 Calculate element-wise hyperbolic tangent.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.tanh(x)
-        " y.data: 0.964028
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Tanh(x)
+        echo y.data  # [0.964028]
 <
 ------------------------------------------------------------------------------
-autograd.abs(input)                                         *autograd.abs()*
+autograd.Abs(input)                                          *autograd.Abs()*
 Calculate element-wise absolute value.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
+        input (|Tensor|, `list`, `float`, `number`):
             This argument is automatically converted to a Tensor.
 
     Example: >
-        let x = autograd.tensor([-2.0, 1.0, -3.0])
-        let y = autograd.abs(x)
-        " y.data: [2.0, 1.0, 3.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new([-2.0, 1.0, -3.0])
+        var y = ag.Abs(x)
+        echo y.data  # [2.0, 1.0, 3.0]
 <
 ------------------------------------------------------------------------------
-autograd.sign(input)                                       *autograd.sign()*
+autograd.Sign(input)                                        *autograd.Sign()*
 Compute element-wise sign function. sign(x) returns 1 when x is greater than
 0, 0 when x is 0, and -1 when x is less than 0.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
-    Example: >
-        let x = autograd.tensor([-2.0, 1.0, 0.0])
-        let y = autograd.sign(x)
-        " y.data: [-1.0, 1.0, 0.0]
+    example: >
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new([-2.0, 1.0, 0.0])
+        var y = ag.Sign(x)
+        echo y.data  # [-1.0, 1.0, 0.0]
 <
 ------------------------------------------------------------------------------
-autograd.sum(input, axis=[], keepdims=0)                    *autograd.sum()*
+autograd.Sum(input, axis=[], keepdims=0)                     *autograd.Sum()*
 It returns the sum of all elements or elements in given axis in input.
 If no axis is specified, it returns the sum of all elements. If keepdims is
-True (1), the summed axes are kept as the axis of element 1.
+true (1), the summed axes are kept as the axis of element 1.
 
-    Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+    arguments:
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
-        axis (`Number`, `List` of `Number`):
+        axis (`number`, `list`<`number`>):
             The axes must be continuous on the left or right side. For
-            example, you cannot specify [1, 2] in a 4D Tensor. Also,
+            example, you cannot specify [1, 2] in a 4D tensor. Also,
             specifying something like [0, 2] is interpreted the same shape as
             [0, 1, 2]. By the way, a negative axis is converted to a
             reverse-index.
 
-        keepdims (`Bool`):
-            Whether the output Tensor retains the same dimension as
+        keepdims (`bool`):
+            Whether the output tensor retains the same dimension as
             input.shape.
 
     Example: >
-        let x = autograd.tensor([[1, 2, 3], [4, 5, 6]])
-        let y = autograd.sum(x, 1)
-        " y.data: [6.0, 15.0]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new([[1, 2, 3], [4, 5, 6]])
+        var y = ag.Sum(x, 1)
+        echo y.data  # [6.0, 15.0]
 <
 ------------------------------------------------------------------------------
-autograd.broadcast_to(input, shape)                *autograd.broadcast_to()*
-Broadcasts input Tensor to the shape. However, the axis to be broadcast must
+autograd.BroadcastTo(input, shape)                   *autograd.BroadcastTo()*
+Broadcasts input tensor to the shape. However, the axis to be broadcast must
 be biased to the left or right, so broadcasts on the middle axis are not
 supported. For example, [1, 1, 2] can be broadcast to [4, 2, 2], but [4, 1, 2]
 cannot be broadcast to [4, 2, 2].
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
-        shape (`List` of `Number`):
+        shape (`list`<`number`>):
             The new shape.
 
     Example: >
-        let x = autograd.randn(3, 5, 1)
-        let y = autograd.broadcast_to(x, [3, 5, 7])
+        import 'autograd.vim' as ag
+        var x = ag.Randn(3, 5, 1)
+        var y = ag.BroadcastTo(x, [3, 5, 7])
 <
 ------------------------------------------------------------------------------
-autograd.sum_to(input, shape)                            *autograd.sum_to()*
-For backpropagation of broadcast_to, sum input so that it becomes shape. This
-function is used to backpropagate of implicit broadcasts in
-|autograd.elementwise()| when you define your own Function object.
-
-    Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
-
-    Example: >
-        function! nn#add(x0, x1) abort
-          return autograd.Function('s:add').apply(a:x0, a:x1)
-        endfunction
-
-        function! nn#add_forward(xs) dict abort
-          return [autograd.elementwise(a:xs, {a, b -> a + b})]
-        endfunction
-
-        function! nn#add_backward(gys) dict abort
-          let l:x0 = self.inputs[0]
-          let l:x1 = self.inputs[1]
-
-          let l:gx0 = a:gys[0]
-          let l:gx1 = a:gys[0]
-
-          if l:x0.shape == l:x1.shape
-            return [l:gx0, l:gx1]
-          endif
-          return [
-            \ autograd.sum_to(l:gx0, l:x0.shape),
-            \ autograd.sum_to(l:gx1, l:x1.shape)
-            \ ]
-        endfunction
-<
-------------------------------------------------------------------------------
-autograd.max(input)                                         *autograd.max()*
+autograd.Max(input)                                          *autograd.Max()*
 Returns the maximum value of all elements of input.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
     Example: >
-        let x = autograd.tensor([[2.0, 5.6], [2.5, -2.0]])
-        let y = autograd.max(x)
-        " y.data: [5.6]
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new([[2.0, 5.6], [2.5, -2.0]])
+        var y = ag.Max(x)
+        echo y.data  # [5.6]
 
 ------------------------------------------------------------------------------
-autograd.maximum(input, other)                          *autograd.maximum()*
+autograd.Maximum(input, other)                           *autograd.Maximum()*
 Returns the element-wise maximum of input and other.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor. It is also
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor. It is also
             broadcast if it is smaller than the shape of other.
 
-        other (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor. It is also
+        other (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor. It is also
             broadcast if it is smaller than the shape of input.
 
     Example: >
-        let a = autograd.tensor([1, 2, -1])
-        let b = autograd.tensor([3, 0, 4])
-        let y = autograd.maximum(a, b)
-        " y.data: [3.0, 2.0, 4.0]
+        import 'autograd.vim' as ag
+        var a = ag.Tensor.new([1, 2, -1])
+        var b = ag.Tensor.new([3, 0, 4])
+        var y = ag.Maximum(a, b)
+        echo y.data  # [3.0, 2.0, 4.0]
 
 ------------------------------------------------------------------------------
-autograd.transpose(input)                             *autograd.transpose()*
-Returns a new Tensor transposed. There is an alias |Tensor.T()|.
+autograd.Transpose(input)                              *autograd.Transpose()*
+Returns a new tensor transposed.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
     Example: >
-        let x = autograd.randn(2, 3)
-        let y = autograd.transpose(x)
-        " y.shape: [3, 2]
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
+        var y = ag.Transpose(x)
+        echo y.shape  # [3, 2]
 
 ------------------------------------------------------------------------------
-autograd.matmul(input, other)                            *autograd.matmul()*
+autograd.Matmul(input, other)                             *autograd.Matmul()*
 Matrix product of two tensors.
-* If both Tensors are 1-dimensional, the dot product is returned.
-* If both Tensors are 2-dimensional, the matrix product is returned.
-* If the Tensors are 2-dimensional and 1-dimensional, a new axis is added to
-  the 1-dimensional Tensor and the matrix product is returned. If the left
+* If both tensors are 1-dimensional, the dot product is returned.
+* If both tensors are 2-dimensional, the matrix product is returned.
+* If the tensors are 2-dimensional and 1-dimensional, a new axis is added to
+  the 1-dimensional tensor and the matrix product is returned. If the left
   operand is 1-dimensional, it is converted to 1 x n, and if the right operand
   is 1-dimensional, it is converted to n x 1.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor. For a matrix
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor. For a matrix
             product, input.shape[1] must match other.shape[0].
 
-        other (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor. For a matrix
+        other (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor. For a matrix
             product, other.shape[0] must match input.shape[1].
 
     Example: >
-        let x = autograd.randn(2, 3)
-        let W = autograd.randn(3, 2)
-        let y = autograd.matmul(x, W)
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
+        var w = ag.Randn(3, 2)
+        var y = ag.Matmul(x, w)
 <
 ------------------------------------------------------------------------------
-autograd.reshape(input, shape)                          *autograd.reshape()*
-Returns Tensor of different shapes that share the same data as input.
-There is an alias |Tensor.reshape()|.
+autograd.Reshape(input, shape)                           *autograd.Reshape()*
+Returns tensor of different shapes that share the same data as input.
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
-        shape (`List` of `Number`):
-            The new shape. However, the flatten size of the shape and the
+        shape (`list`<`number`>):
+            The new shape. however, the flatten size of the shape and the
             number of elements of input.data must match.
 
     Example: >
-        let x = autograd.randn(2, 3)
-        let y = autograd.reshape(x, [3, 2])
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
+        var y = ag.Reshape(x, [3, 2])
 <
 ------------------------------------------------------------------------------
-autograd.flatten(input)                                 *autograd.flatten()*
-Reshape Tensor to one-dimensional.
-This is the same as autograd.reshape(input, [len(input.data)]).
-There is an alias |Tensor.flatten()|.
+autograd.Flatten(input)                                  *autograd.Flatten()*
+Reshape tensor to one-dimensional.
+This is the same as |autograd.Reshape|(input, [input.Numel()]).
 
     Arguments:
-        input (Tensor, `List`, `Float`, `Number`):
-            This argument is automatically converted to a Tensor.
+        input (|Tensor|, `list`, `float`, `number`):
+            This argument is automatically converted to a tensor.
 
     Example: >
-        let x = autograd.randn(2, 3)
-        let y = autograd.flatten(x)
-        " y.shape: [6]
+        import 'autograd.vim' as ag
+        var x = ag.Randn(2, 3)
+        var y = ag.Flatten(x)
+        echo y.shape  # [6]
 <
 ------------------------------------------------------------------------------
-autograd.manual_seed(seed)                          *autograd.manual_seed()*
-It sets the seed of the random functions provided by vim-autograd. By default,
+autograd.ManualSeed(seed)                            *autograd.manual_seed()*
+Sets the seed of the random functions provided by vim-autograd. By default,
 the seed is a random value returned by `srand()`.
 
     Arguments:
-        seed (`Number`):
+        seed (`number`):
             It uses `srand(seed)`.
 
     Example: >
-        call autograd.manual_seed(42)
+        import 'autograd.vim' as ag
+        ag.ManualSeed(42)
 
 ------------------------------------------------------------------------------
-autograd.random()                                        *autograd.random()*
-It returns a random scalar value between 0.0 and 1.0.
+autograd.Random()                                         *autograd.Random()*
+Returns a random scalar value between 0.0 and 1.0.
 
     Example: >
-        let x = autograd.random()
+        import 'autograd.vim' as ag
+        var x = ag.Random()
 <
 ------------------------------------------------------------------------------
-autograd.fmax(list_obj)                                    *autograd.fmax()*
-It returns the maximum value of a `List` whose elements are `Float` values.
-
-    Arguments:
-         list_obj (`List`):
-             A list of `Float' or `Number`.
+autograd.Pi()                                                 *autograd.Pi()*
+Returns a scalar value that approximates pi.
 
     Example: >
-        let x = autograd.fmax([2, 3, 4, 5, 6])
+        import 'autograd.vim' as ag
+        var x = ag.Pi()
 <
 ------------------------------------------------------------------------------
-autograd.pi()                                                *autograd.pi()*
-It returns a scalar value that approximates pi.
-
-    Example: >
-        let x = autograd.pi()
-<
-------------------------------------------------------------------------------
-                                                           *autograd.grad()*
-autograd.grad(output, inputs, create_graph=0, retain_outgrad=0)
+                                                            *autograd.Grad()*
+autograd.Grad(output, inputs, create_graph=false, retain_outgrad=false)
 Compute and return the gradient of the output with respect to the inputs. 
 
     Arguments:
-        output (Tensor):
-            A Tensor object that retained the computed graph.
+        output (|Tensor|):
+            A tensor object that retained the computed graph.
 
-        inputs (Tensor, `List` of Tensor):
-            If it is a `List` with one element or Tensor, a single Tensor is
-            returned. And, if a `List` with multiple elements, a `List` of
-            Tensor is returned. The .grad attribute of this inputs argument is
-            not polluted.
+        inputs (|Tensor|, `list`<|Tensor|>):
+            If it is a `list` with one element or tensor, a single tensor is
+            returned. and, If a `list` with multiple elements, a `list` of
+            tensor is returned. The .grad attribute of this inputs argument
+            is not polluted.
 
-        create_graph (`Bool`):
+        create_graph (`bool`):
             Construct a computational graph for backpropergation to compute
             higher-order derivatives.
 
-        retain_outgrad (`Bool`):
+        retain_outgrad (`bool`):
             Holds the gradient of the variable output by each function.
-            if y=f(x), y.grad holds the gradient of df/dy.
+            If y=f(x), y.grad holds the gradient of df/dy.
 
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.pow(x, 5.0)
-        let gx1 = autograd.grad(y, x, 1)
-        let gx2 = autograd.grad(gx1, x, 1)
-        " y.data  : [32.0]
-        " gx1.data: [80.0]
-        " gx2.data: [160.0]
+        import 'autograd.vim' as ag
+        const Tensor = ag.Tensor
+
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Pow(x, 5.0)
+        var gx1: Tensor = ag.Grad(y, x, 1)
+        var gx2: Tensor = ag.Grad(gx1, x, 1)
+        echo y.data    # [32.0]
+        echo gx1.data  # [80.0]
+        echo gx2.data  # [160.0]
 <
 ------------------------------------------------------------------------------
-autograd.no_grad()                                      *autograd.no_grad()*
+autograd.NoGrad(Fn)                                       *autograd.NoGrad()*
 Switch to a mode that does not create computed graphs to save computation cost
-and memory consumption. Backpropagation is not available for functions
-computed in this mode. To exit this mode, call the |NoGrad.end()| method of
-the returned handle.
-
-    Example: >
-        let x = autograd.tensor(2.0)
-        let handle = autograd.no_grad()
-        let y = autograd.pow(x, 4.0)
-        call handle.end()
-
-------------------------------------------------------------------------------
-autograd.elementwise(inputs, f, out={})             *autograd.elementwise()*
-Create a tensor whose elements are the result of feeding each element of
-inputs into f. However, this function corresponds to the constructor of Tensor
-and is not differentiable.
+and memory consumption and call the Fn. The back propagation is not available
+for functions computed in this mode.
 
     Arguments:
-        inputs (`List` of Tensor):
-            If the number of elements is one, process f as a unary operator,
-            and if is two, do as a binary operator. If the Tensor shapes do
+        Fn (`func`):
+            A function to call without back propagation.
+
+    Example: >
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        ag.NoGrad(() => {
+          var y = ag.Pow(x, 4.0)
+        })
+
+------------------------------------------------------------------------------
+autograd.Elementwise(inputs, Fn, out={})             *autograd.Elementwise()*
+Create a tensor whose elements are the result of feeding each element of
+inputs into ElementalFunc. However, this function corresponds to the
+constructor of tensor and is not differentiable.
+
+    Arguments:
+        inputs (`list`<|Tensor|>):
+            If the number of elements is one, process Fn as a unary operator,
+            and if is two, do as a binary operator. If the tensor shapes do
             not match, the smaller shape is automatically broadcast to the
             larger shape.
 
-        f (`lambda`, `Funcref`):
+        Fn (`func`: `float`):
             A function reference or lambda that takes one or two scalar values
-            and returns one scalar value.
+            and returns one `float` value.
 
-        out (`Tensor`, optional):
-            Tensor object with the same shape with the larger shape in
-            inputs. If this argument is empty, a new Tensor object is created
-            and the results are stored. If a valid Tensor object is passed as
-            of this argument, stores the element-wise results to its .data
-            attribute, so the Tensor's id attribute does not change and can
-            save computational cost. In both cases, the result Tensor is
+        out (|Tensor|, optional):
+            Tensor object with the same shape with the larger shape in inputs.
+            If this argument is empty, a new tensor object is created and the
+            results are stored. If a valid tensor object is passed as of this
+            argument, stores the element-wise results to its |autograd.data|
+            attribute, so the |Tensor|'s id attribute does not change and can
+            save computational cost. In both cases, the result tensor is
             returned as the return value.
 
     Example: >
-        let a = autograd.tensor([[2, 3], [4, 5]])
-        let b = autograd.tensor([[7, 6], [2, 5]])
-        let y = autograd.elementwise([a, b], {p, q -> p + q})
-        " y.shape: [2, 2]
-        " y.data: [9, 9, 6, 10]
+        import 'autograd.vim' as ag
+        var a = ag.Tensor.new([[2, 3], [4, 5]])
+        var b = ag.Tensor.new([[7, 6], [2, 5]])
+        var y = ag.Elementwise([a, b], (p, q): float => p + q)
+        echo y.shape  # [2, 2]
+        echo y.data   # [9.0, 9.0, 6.0, 10.0]
 <
 ------------------------------------------------------------------------------
-autograd.shuffle(list_obj)                              *autograd.shuffle()*
-Sort the list randomly. It based on Fisher-Yates shuffle algorithm,
+autograd.Shuffle(list_obj)                               *autograd.Shuffle()*
+Sort the list randomly. It based on Fisher-Yates shuffle algorithm.
 
     Arguments:
-        list_obj (`List`):
-            A list of `Float` or `Number`.
+        list_obj (`list`<`flaot`>, `list`<`number`>):
+            A list of `float` or `number` to sort.
 
     Example: >
-        let x = autograd.shuffle(range(10))
-        " x: [8, 5, 1, 6, 4, 7, 9, 3, 2, 0]
+        import 'autograd.vim' as ag
+        var x = ag.Shuffle(range(10))
+        echo x  # [8, 5, 1, 6, 4, 7, 9, 3, 2, 0]
 <
 ------------------------------------------------------------------------------
-autograd.dump_graph(last_node, filepath)             *autograd.dump_graph()*
+autograd.DumpGraph(last_node, filepath)               *autograd.dump_graph()*
 Visualize computational graphs of last_node.
-If graphviz is installed, it generates images and DOT language source code,
-otherwise it generates only DOT language source code. If you want to give a
-label to a node, set a string to the .name attribute of the Tensor object
-contributing to the graph.
+If graphviz is installed, it generates images and dot language source code,
+otherwise it generates only dot language source code. If you want to give a
+label to a node, set a string of the name with |Tensor.SetName()|.
 
     Arguments:
-        last_node (Tensor):
+        last_node (|Tensor|):
             Last node of the computational graph.
 
-        filepath (`String`): 
+        filepath (`string`): 
             The path to the the image to be generated. If there is no parent
             directory of the file, it will be generated recursively.
 
     Example: >
-        let x = autograd.tensor(2.0)
-        let y = autograd.pow(x, 3.0)
-        let x.name = 'x'
-        let y.name = 'y'
-        call autograd.dump_graph(y, '.autograd/pow.png')
+        import 'autograd.vim' as ag
+        var x = ag.Tensor.new(2.0)
+        var y = ag.Pow(x, 3.0)
+        x.SetName('x')
+        y.SetName('y')
+        ag.DumpGraph(y, '.autograd/pow.png')
 
 ------------------------------------------------------------------------------
-autograd.numerical_grad(f, input)                *autograd.numerical_grad()*
+autograd.NumericalGrad(Fn, input)                  *autograd.NumericalGrad()*
 Compute and return the numerical derivative based on central difference.
 
     Arguments:
-        f (`lambda`, `Funcref`):
-            A function object that accepts a single Tensor. If the
+        Fn (`func`):
+            A function object that accepts a single tensor. If the
             multivariable function, fix all but one argument using a lambda.
 
-        x (Tensor):
-            Tensor fed to f.
+        input (tensor):
+            Tensor fed to Fn.
 
     Example: >
-        let a = autograd.tensor(2.0)
-        let b = autograd.tensor(6.0)
-        let F = {x -> autograd.mul(x, b)}
-        let grad = autograd.numerical_grad(F, a)
+        import 'autograd.vim' as ag
+        var a = ag.Tensor.new(2.0)
+        var b = ag.Tensor.new(6.0)
+        var Fn = (x) => ag.Mul(x, b)
+        var grad = ag.NumericalGrad(Fn, a)
 
 ------------------------------------------------------------------------------
-autograd.gradcheck(f, inputs)                         *autograd.gradcheck()*
+autograd.GradCheck(Fn, inputs)                         *autograd.GradCheck()*
 It compares the result of the numerical differentiation with the gradient and
 exits successfully if all elements are very close, and emits an assert if they
 are different.
 
     Arguments:
-        f (`lambda`, `Funcref`):
-            A differentiable function that accepts a `List` of Tensors.
+        Fn (`func`):
+            a differentiable function that accepts a `list` of tensors.
 
-        inputs (`List` of Tensor):
-            `List` of Tensor fed to f.
+        inputs (`list`<|Tensor|>):
+            `list` of Tensor fed to f.
 
     Example: >
-        let a = autograd.randn(2, 3)
-        let b = autograd.randn(2, 3)
-        let F = {xs -> autograd.mul(xs[0], xs[1])}
-        call autograd.gradcheck(F, [a, b])
+        import 'autograd.vim' as ag
+        var a = ag.Randn(2, 3)
+        var b = ag.Randn(2, 3)
+        var Fn = (xs) => ag.Mul(xs[0], xs[1])
+        ag.GradCheck(Fn, [a, b])
 
 ==============================================================================
-LICENSE                                               *vim-autograd-license*
+LICENSE                                                *vim-autograd-license*
 
 MIT License Copyright (c) 2022-2023 pit-ray
 
 The full text is available at
-https://github.com/pit-ray/vim-autograd/blob/main/LICENSE.
+https://github.com/pit-ray/vim-autograd/blob/main/license.
 
 ==============================================================================
-MAINTAINERS                                       *vim-autograd-maintainers*
+MAINTAINERS                                        *vim-autograd-maintainers*
 
 * pit-ray (author, maintainer): https://github.com/pit-ray
 

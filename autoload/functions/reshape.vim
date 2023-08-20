@@ -52,6 +52,6 @@ export def Reshape(x: tensor.Tensor, shape: list<number>): tensor.Tensor
 enddef
 
 
-export def Flatten(x: any): tensor.Tensor
+export def Flatten(x: tensor.Tensor): tensor.Tensor
   return Reshape(x, [x.Numel()])
 enddef
