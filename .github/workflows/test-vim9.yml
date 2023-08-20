@@ -1,8 +1,8 @@
-name: test
+name: test-vim9
 
 on:
   push:
-    branches: [main]
+    branches: [vim9]
     tags:
       - v*.*.*
     paths:
@@ -16,7 +16,7 @@ on:
       - 'examples/**'
 
   pull_request:
-    branches: [main]
+    branches: [vim9]
 
 jobs:
   test-on-Ubuntu:
